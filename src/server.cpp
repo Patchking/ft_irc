@@ -56,6 +56,11 @@ void Server::run_iteration() {
 		fd_t new_user_descr
 			= accept(m_sock, (struct sockaddr *)&csin, &csin_len);
 		if (new_user_descr > 0) {
+			if (fcntl(new_user_descr, F_SETFL, O_NONBLOCK) < 0) {
+				Console::log("fcntl() error", Console::GENERAL);
+				Console::log(strerror(errno), Console::GENERAL);
+				abort();
+			}
 			Console::log("New incoming connection #"
 					, new_user_descr, Console::LOG);
 			m_users[new_user_descr].fd = new_user_descr;
