@@ -2,3 +2,9 @@
 *.d
 ircserv
 temp
+*.swp
+*.swo
+*.o
+*.out
+HeaderDependencies/*
+Objects/*
