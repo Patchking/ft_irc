@@ -65,8 +65,8 @@ void Server::run()
             buffer[0] = '\0';
             int result = recv(it->first, buffer, MESSAGE_MAX_LEN - 1, 0);
 			enum Case {
-				USER_DISCONNECTED,
-				USER_STOPPED_WRITING,
+				USER_DISCONNECTED = 0,
+				USER_STOPPED_WRITING = -1,
 			};
 			//0 -> user send \0 and therefore it does not want to talk to the server anymore.
 			//logout
