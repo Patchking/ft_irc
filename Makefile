@@ -6,7 +6,7 @@
 #    By: jzoltan <jzoltan@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/02/03 04:30:43 by jzoltan           #+#    #+#              #
-#    Updated: 2023/02/06 18:58:05 by jzoltan          ###   ########.fr        #
+#    Updated: 2023/02/06 19:41:56 by jzoltan          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 #*
@@ -146,8 +146,8 @@ endif
 #*
 .SECONDEXPANSION:
 $(OBJS_DIR)%$(OBJS_EXT): $(SRCS_DIR)%$(SRCS_EXT) | \
-		$$(dir $$@) \
-		$$(dir $$(DFILES_DIR)/$$*$$(DFILES_EXT))
+		$$(dir $$@)/ \
+		$$(dir $$(DFILES_DIR)/$$*$$(DFILES_EXT))/
 	$(CC) $(CFLAG) $(INCS) -c $< -o $@ $(DFLAG)
 
 include $(wildcard $(DFS))
