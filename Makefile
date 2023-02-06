@@ -6,7 +6,7 @@
 #    By: jzoltan <jzoltan@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/02/03 04:30:43 by jzoltan           #+#    #+#              #
-#    Updated: 2023/02/06 19:41:56 by jzoltan          ###   ########.fr        #
+#    Updated: 2023/02/06 20:24:04 by jzoltan          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 #*
@@ -115,7 +115,7 @@ INTERMEDIATE_DIRECTORIES=$(call uniq, $(foreach path, $(sort $(foreach obj, $(OB
 #*                              Directories Rule                              *#
 #* ************************************************************************** *#
 #*
-%/:
+$(INTERMEDIATE_DIRECTORIES):
 	mkdir -p $@
 #*
 #* ************************************************************************** *#
@@ -139,18 +139,6 @@ bonus:
 .PHONY:bonus
 endif
 endif
-#*
-#* ************************************************************************** *#
-#*                               Objects Rule                                 *#
-#* ************************************************************************** *#
-#*
-.SECONDEXPANSION:
-$(OBJS_DIR)%$(OBJS_EXT): $(SRCS_DIR)%$(SRCS_EXT) | \
-		$$(dir $$@)/ \
-		$$(dir $$(DFILES_DIR)/$$*$$(DFILES_EXT))/
-	$(CC) $(CFLAG) $(INCS) -c $< -o $@ $(DFLAG)
-
-include $(wildcard $(DFS))
 #*
 #* ************************************************************************** *#
 #*                            Dependencies rules                              *#
@@ -240,6 +228,18 @@ test:
 	@echo "$(INTERMEDIATE_DIRECTORIES)"
 
 .PHONY: clean fclean re remake
+#*
+#* ************************************************************************** *#
+#*                               Objects Rule                                 *#
+#* ************************************************************************** *#
+#*
+.SECONDEXPANSION:
+$(OBJS_DIR)%$(OBJS_EXT): $(SRCS_DIR)%$(SRCS_EXT) | \
+		$$(dir $$@) \
+		$$(dir $$(DFILES_DIR)/$$*$$(DFILES_EXT))
+	$(CC) $(CFLAG) $(INCS) -c $< -o $@ $(DFLAG)
+
+include $(wildcard $(DFS))
 #*
 #* ************************************************************************** *#
 #*                                   Appendix                                 *#
