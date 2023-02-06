@@ -39,7 +39,7 @@ public:
     Server(int port_, std::string passwd);
     void disconnect_user(int fd);
     void run();
-    void sendMessege(int fd, const std::string &messege);
+    void sendMessege(int fd, const std::string &messege); // Для отправки сообщения юзеру с заданым дескриптором. Список юзеров хранится в users.
     std::string getPassword() const { return password; }
     void setPassword(std::string password_) { password = password_; }
 };

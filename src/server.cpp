@@ -60,10 +60,6 @@ void Server::run()
         }
 
         // Попытка прочитать fd всех текущих соединений. В случае успешного чтения передает управление логике, в случае разрыва соединения удалет информацию о соединении
-        struct timeval timeout = {0, 0};
-        FD_ZERO(&fd_read);
-        FD_ZERO(&fd_write);
-        select(FD_SETSIZE - 1, &fd_read, &fd_write, NULL, &timeout);
         for (std::map<int, User>::iterator it = users.begin(); it != users.end();) {
             char buffer[MESSEGE_MAX_LEN];
             buffer[0] = '\0';
@@ -90,7 +86,7 @@ void Server::run()
         }
 
         for (std::map<int, User>::iterator it = users.begin(); it != users.end(); it++) {
-            if (!it->second.writebuffer.empty() && FD_ISSET(it->first, &fd_write)) {
+            if (!it->second.writebuffer.empty()) {
                 send(it->first, it->second.writebuffer.c_str(), it->second.writebuffer.size(), 0);
                 it->second.writebuffer.erase();
             }
