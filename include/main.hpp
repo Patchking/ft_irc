@@ -3,9 +3,9 @@
 
 #define MESSAGE_MAX_LEN 32
 
-#include "string.h"
-#include "console.h"
-#include "server.h"
+#include "cstring"
+#include "Console.hpp"
+#include "Server.hpp"
 
 
 #endif

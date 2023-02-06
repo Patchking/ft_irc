@@ -1,28 +1,30 @@
-#include "main.h"
-
-
+#include "main.hpp"
+#include <Abort.hpp>
 //TODO implement atoi
 int atoi(char const *);
 
 void check_input(int argc, char **argv)
 {
     if (argc != 3) {
-        Console::log("Wrong argument", PRINT_GENERAL);
-        Console::log("Usage: ./ircserv <port> <password>", PRINT_GENERAL);
-        abort();
+		ft_irc::Console::log("Wrong argument"
+				, ft_irc::Console::GENERAL);
+		ft_irc::Console::log("Usage: ./ircserv <port> <password>"
+				, ft_irc::Console::GENERAL);
+		ft_irc::abort();
     }
     if (atoi(argv[1]) < 1024 || atoi(argv[2]) > 0xffff) {
-        Console::log("Error: port must be in range [1024:65535]", PRINT_GENERAL);
-        abort();
+		ft_irc::Console::log("Error: port must be in range [1024:65535]"
+				, ft_irc::Console::GENERAL);
+		ft_irc::abort();
     }
 }
 
 int main(int argc, char **argv)
 {
-    Console::set_log_level(PRINT_LOG);
+	ft_irc::Console::set_log_level(ft_irc::Console::LOG);
     check_input(argc, argv);
     int port = atoi(argv[1]);
-    Console::log("Init server, port - " + std::to_string(port), PRINT_GENERAL);
-    Server serv(port, argv[2]);
+	ft_irc::Console::log("Init server, port - ", port, ft_irc::Console::GENERAL);
+	ft_irc::Server serv(port, argv[2]);
     serv.run();
 }

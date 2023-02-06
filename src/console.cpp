@@ -1,19 +1,11 @@
-#include "console.h"
+#include "Console.hpp"
 
-int Console::print_level = 0;
+namespace ft_irc {
 
-void Console::set_log_level(int level)
+void Console::set_log_level(Console::Level level)
 {
-    print_level = level;
+	m_level = level;
 }
 
-void Console::log(std::string msg, int level)
-{
-    if (level >= print_level)
-        std::cout << msg << std::endl;
-}
-
-void abort()
-{
-    exit(0);
+Console::Level Console::m_level = Console::ALL;
 }
