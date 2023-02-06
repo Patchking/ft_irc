@@ -17,5 +17,3 @@ void abort()
 {
     exit(0);
 }
-
-// void abort(Server)
