@@ -61,27 +61,40 @@ void Server::run()
 
         // Попытка прочитать fd всех текущих соединений. В случае успешного чтения передает управление логике, в случае разрыва соединения удалет информацию о соединении
         for (std::map<int, User>::iterator it = users.begin(); it != users.end();) {
-            char buffer[MESSEGE_MAX_LEN];
+            char buffer[MESSAGE_MAX_LEN];
             buffer[0] = '\0';
-            int result = recv(it->first, buffer, MESSEGE_MAX_LEN - 1, 0);
-            if (result == 0) {
-                Console::log("User " + std::to_string(it->first) + " disconnected", PRINT_LOG);
-                disconnect_user((it++)->first);
-                continue;
-            }
-            if (result == -1 && !it->second.readbuffer.empty()) {
-                Console::log(it->second.readbuffer, PRINT_LOG);
-                // При получении сообщения вызывается то, что ты вставишь ниже. Для доступа к сообщению - "it->second.readbuffer"
+            int result = recv(it->first, buffer, MESSAGE_MAX_LEN - 1, 0);
+			enum Case {
+				USER_DISCONNECTED,
+				USER_STOPPED_WRITING,
+			};
+			//0 -> user send \0 and therefore it does not want to talk to the server anymore.
+			//logout
+			switch (result) {
+				case USER_DISCONNECTED:
+					Console::log("User " + std::to_string(it->first) + " disconnected", PRINT_LOG);
+					disconnect_user((it++)->first);
+				break; case USER_STOPPED_WRITING:
+				//-1 -> user is not writing anything.
+					if (it->second.readbuffer.empty())
+						break;
+					Console::log(it->second.readbuffer, PRINT_LOG);
+					// При получении сообщения вызывается то
+					// , что ты вставишь ниже
+					// . Для доступа к сообщению - "it->second.readbuffer"
+					//NOTE: change to logic. argument 1 is fd; 0 -> send to all,
+					sendMessage(0, it->second.readbuffer);
+					// - это пример
+					// . Сервер пытается отправить всем доступным хостам ответное сообщение
 
-                sendMessege(0, it->second.readbuffer); // - это пример. Сервер пытается отправить всем доступным хостам ответное сообщение
-
-                // Пример заканчивается здесь.
-                it->second.readbuffer.erase();
-            }
-            else {
-                buffer[result] = '\0';
-                it->second.readbuffer += buffer;
-            }
+					// Пример заканчивается здесь.
+					it->second.readbuffer.erase();
+				// user has not written anything. result = -1
+				// result = buffer written.
+				break; default:
+					buffer[result] = '\0';
+					it->second.readbuffer += buffer;
+			}
             it++;
         }
 
@@ -97,19 +110,19 @@ void Server::run()
     }
 }
 
-void Server::sendMessege(int fd, const std::string &messege)
+void Server::sendMessage(int fd, const std::string &message)
 {
     if (fd == 0) {
         for (std::map<int, User>::iterator it = users.begin(); it != users.end(); it++) {
-            it->second.writebuffer += messege;
+            it->second.writebuffer += message;
         }
         return ;
     }
     if (users.find(fd) == users.end()) {
-        Console::log("SendMessege error. No such fd " + std::to_string(fd), PRINT_GENERAL);
+        Console::log("SendMessage error. No such fd " + std::to_string(fd), PRINT_GENERAL);
         abort();
     }
-    users[fd].writebuffer += messege;
+    users[fd].writebuffer += message;
 }
 
 void Server::disconnect_user(int fd)
@@ -119,5 +132,5 @@ void Server::disconnect_user(int fd)
 
 User::User()
 {
-    // memset(buffer, 0, MESSEGE_MAX_LEN);
+    // memset(buffer, 0, MESSAGE_MAX_LEN);
 }

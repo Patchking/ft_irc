@@ -1,5 +1,9 @@
 #include "main.h"
 
+
+//TODO implement atoi
+int atoi(char const *);
+
 void check_input(int argc, char **argv)
 {
     if (argc != 3) {

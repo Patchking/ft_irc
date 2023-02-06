@@ -29,6 +29,7 @@ class Server
 private:
     int dt;
     std::string password;
+			//fd
     std::map<int, User> users;
     int sock;
 
@@ -38,7 +39,7 @@ public:
     void run();
 
     void disconnect_user(int fd);
-    void sendMessege(int fd, const std::string &messege); // Для отправки сообщения юзеру с заданым дескриптором. Список юзеров хранится в users.
+    void sendMessage(int fd, const std::string &message); // Для отправки сообщения юзеру с заданым дескриптором. Список юзеров хранится в users.
 
     void setPassword(std::string password_) { password = password_; }
     std::string getPassword() const { return password; }

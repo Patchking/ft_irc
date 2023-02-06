@@ -1,7 +1,7 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#define MESSEGE_MAX_LEN 32
+#define MESSAGE_MAX_LEN 32
 
 #include "string.h"
 #include "console.h"
