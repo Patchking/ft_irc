@@ -45,74 +45,79 @@ Server::Server(int port_, std::string passwd) : port(port_)
 	}
 }
 
+inline
+void Server::run_iteration() {
+	Console::log("updated: ", m_dt, Console::DEBUG);
+	// Поиск новых соединений. Если успешно, сохранине информации о соединении
+	{
+		struct sockaddr_in csin;
+		socklen_t csin_len;
+
+		fd_t new_user_descr
+			= accept(m_sock, (struct sockaddr *)&csin, &csin_len);
+		if (new_user_descr > 0) {
+			Console::log("New incoming connection #"
+					, new_user_descr, Console::LOG);
+			m_users[new_user_descr].fd = new_user_descr;
+			m_users[new_user_descr].netstat = csin;
+		}
+	}
+
+	// Попытка прочитать fd всех текущих соединений.
+	// В случае успешного чтения передает управление логике
+	// , в случае разрыва соединения удалет информацию о соединении.
+	for (users_type::iterator it = m_users.begin(); it != m_users.end(); ++it) {
+		char buffer[MESSAGE_MAX_LEN];
+		buffer[0] = '\0';
+		Console::log("recv called with: [", it->first, ", ", buffer, "]");
+		ssize_t result = recv(it->first, buffer, MESSAGE_MAX_LEN - 1, 0);
+		Console::log("Left recv");
+		enum {
+			USER_DISCONNECTED = 0,
+			USER_STOPPED_WRITING = -1
+		};
+		switch (result) {
+			case USER_DISCONNECTED:
+				Console::log("User ", it->first, " disconnected", Console::LOG);
+				disconnect_user(it->first);
+			break; case USER_STOPPED_WRITING:
+				if (it->second.readbuffer.empty())
+					break;
+				Console::log("User #", it->first, "sends message");
+				Console::log(it->second.readbuffer, Console::LOG);
+				// При получении сообщения вызывается то
+				// , что ты вставишь ниже
+				// . Для доступа к сообщению - "it->second.readbuffer"
+				sendMessage(0, it->second.readbuffer);
+				// - это пример
+				// . Сервер пытается отправить всем доступным хостам
+				// ответное сообщение.
+
+				// Пример заканчивается здесь.
+				it->second.readbuffer.erase();
+			break; default:
+				Console::log("User #", it->first, "message updated");
+				buffer[result] = '\0';
+				it->second.readbuffer += buffer;
+		}
+	}
+
+	for (users_type::iterator it = m_users.begin(); it != m_users.end(); ++it) {
+		if (!it->second.writebuffer.empty()) {
+			send(it->first, it->second.writebuffer.c_str()
+					, it->second.writebuffer.size(), 0);
+			it->second.writebuffer.erase();
+		}
+	}
+
+	usleep(100000); // Таймер логики. Можно редактировать, как вздумается
+	++m_dt;
+}
+
 void Server::run()
 {
 	while (1) {
-		Console::log("updated: ", m_dt, Console::DEBUG);
-		// Поиск новых соединений. Если успешно, сохранине информации о соединении
-		{
-			struct sockaddr_in csin;
-			socklen_t csin_len;
-
-			fd_t new_user_descr
-				= accept(m_sock, (struct sockaddr *)&csin, &csin_len);
-			if (new_user_descr > 0) {
-				Console::log("New incoming connection #"
-						, new_user_descr, Console::LOG);
-				m_users[new_user_descr].fd = new_user_descr;
-				m_users[new_user_descr].netstat = csin;
-			}
-		}
-
-		// Попытка прочитать fd всех текущих соединений.
-		// В случае успешного чтения передает управление логике
-		// , в случае разрыва соединения удалет информацию о соединении.
-		for (users_type::iterator it = m_users.begin(); it != m_users.end();) {
-			char buffer[MESSAGE_MAX_LEN];
-			buffer[0] = '\0';
-			ssize_t result = recv(it->first, buffer, MESSAGE_MAX_LEN - 1, 0);
-			enum {
-				USER_DISCONNECTED = 0,
-				USER_STOPPED_WRITING = -1
-			};
-			switch (result) {
-				case USER_DISCONNECTED:
-					Console::log("User ", it->first, " disconnected", Console::LOG);
-					disconnect_user(it->first);
-					++it;
-				break; case USER_STOPPED_WRITING:
-					if (it->second.readbuffer.empty())
-						break;
-					Console::log("User #", it->first, "sends message");
-					Console::log(it->second.readbuffer, Console::LOG);
-					// При получении сообщения вызывается то
-					// , что ты вставишь ниже
-					// . Для доступа к сообщению - "it->second.readbuffer"
-					sendMessage(0, it->second.readbuffer);
-					// - это пример
-					// . Сервер пытается отправить всем доступным хостам
-					// ответное сообщение.
-
-					// Пример заканчивается здесь.
-					it->second.readbuffer.erase();
-				break; default:
-					Console::log("User #", it->first, "message updated");
-					buffer[result] = '\0';
-					it->second.readbuffer += buffer;
-			}
-			++it;
-		}
-
-		for (users_type::iterator it = m_users.begin(); it != m_users.end(); ++it) {
-			if (!it->second.writebuffer.empty()) {
-				send(it->first, it->second.writebuffer.c_str()
-						, it->second.writebuffer.size(), 0);
-				it->second.writebuffer.erase();
-			}
-		}
-
-		usleep(10000); // Таймер логики. Можно редактировать, как вздумается
-		++m_dt;
+		run_iteration();
 	}
 }
 

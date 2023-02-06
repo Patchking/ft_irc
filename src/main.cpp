@@ -21,7 +21,7 @@ void check_input(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-	ft_irc::Console::set_log_level(ft_irc::Console::LOG);
+	ft_irc::Console::set_log_level(ft_irc::Console::ALL);
     check_input(argc, argv);
     int port = atoi(argv[1]);
 	ft_irc::Console::log("Init server, port - ", port, ft_irc::Console::GENERAL);

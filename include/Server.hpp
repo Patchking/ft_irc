@@ -29,6 +29,9 @@ public:
     std::map<fd_t, User>& getUsers() { return m_users; }
     int getSockFd() { return m_sock; }
 private:
+	void
+	run_iteration();
+private:
     int m_dt;
     int m_sock;
     const int port;
