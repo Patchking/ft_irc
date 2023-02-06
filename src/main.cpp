@@ -15,7 +15,7 @@ void check_input(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-    Console::set_log_level(PRINT_ALL);
+    Console::set_log_level(PRINT_LOG);
     check_input(argc, argv);
     int port = atoi(argv[1]);
     Console::log("Init server, port - " + std::to_string(port), PRINT_GENERAL);

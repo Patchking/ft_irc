@@ -17,8 +17,8 @@ class User
 public:
     User();
     int fd;
-    // char buffer[MESSEGE_MAX_LEN];
-    std::string out;
+    std::string readbuffer;
+    std::string writebuffer;
     struct sockaddr_in netstat;
 private:
     
@@ -27,20 +27,19 @@ private:
 class Server
 {
 private:
-    int port;
     int dt;
     std::string password;
-    std::string servername;
     std::map<int, User> users;
     int sock;
-    // fd_set fd_read;
-    // fd_set fd_write;
+    fd_set fd_read;
+    fd_set fd_write;
 
 public:
-    Server(int port, std::string passwd);
+    const int port;
+    Server(int port_, std::string passwd);
+    void disconnect_user(int fd);
     void run();
-    int getPort() const { return port; }
-    void setPort(int port_) { port = port_; }
+    void sendMessege(int fd, const std::string &messege);
     std::string getPassword() const { return password; }
     void setPassword(std::string password_) { password = password_; }
 };
