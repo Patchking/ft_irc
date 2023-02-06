@@ -66,7 +66,7 @@ void Server::run_iteration() {
 	// Попытка прочитать fd всех текущих соединений.
 	// В случае успешного чтения передает управление логике
 	// , в случае разрыва соединения удалет информацию о соединении.
-	for (users_type::iterator it = m_users.begin(); it != m_users.end(); ++it) {
+	for (users_type::iterator it = m_users.begin(); it != m_users.end();) {
 		char buffer[MESSAGE_MAX_LEN];
 		buffer[0] = '\0';
 		Console::log("recv called with: [", it->first, ", ", buffer, "]");
@@ -79,7 +79,8 @@ void Server::run_iteration() {
 		switch (result) {
 			case USER_DISCONNECTED:
 				Console::log("User ", it->first, " disconnected", Console::LOG);
-				disconnect_user(it->first);
+				it = m_users.erase(it);
+				continue ;
 			break; case USER_STOPPED_WRITING:
 				if (it->second.readbuffer.empty())
 					break;
@@ -100,6 +101,7 @@ void Server::run_iteration() {
 				buffer[result] = '\0';
 				it->second.readbuffer += buffer;
 		}
+		it++;
 	}
 
 	for (users_type::iterator it = m_users.begin(); it != m_users.end(); ++it) {
