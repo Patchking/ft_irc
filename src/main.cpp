@@ -12,7 +12,9 @@ void check_input(int argc, char **argv)
 				, ft_irc::Console::GENERAL);
 		ft_irc::abort();
     }
-    if (atoi(argv[1]) < 1024 || atoi(argv[2]) > 0xffff) {
+    if (6 < strlen(argv[1])
+			|| atoi(argv[1]) < 1024
+			|| atoi(argv[1]) > 0xffff) {
 		ft_irc::Console::log("Error: port must be in range [1024:65535]"
 				, ft_irc::Console::GENERAL);
 		ft_irc::abort();
