@@ -15,7 +15,8 @@ namespace ft_irc {
 class Server
 {
 public:
-    const int port;
+	typedef std::map<fd_t, User> users_type;
+public:
     Server(int port_, std::string passwd);
     void run();
 
@@ -29,9 +30,10 @@ public:
     int getSockFd() { return m_sock; }
 private:
     int m_dt;
-    std::string m_password;
-    std::map<fd_t, User> m_users;
     int m_sock;
+    const int port;
+    std::string m_password;
+    users_type m_users;
 };
 }
 #endif

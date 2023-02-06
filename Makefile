@@ -1,25 +1,40 @@
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    Makefile                                           :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: jzoltan <jzoltan@student.42.fr>            +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2022/02/03 04:30:43 by jzoltan           #+#    #+#              #
+#    Updated: 2023/02/06 18:58:05 by jzoltan          ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+#*
 all: compile
+MAKEFLAGS+=r
+MAKEFLAGS+=s
 .SUFFIXES:
 #*
 #* ************************************************************************** *#
 #*                              Project Type                                  *#
 #* ************************************************************************** *#
 #*
-LIBRARY         =
+LIBRARY     =
+HAS_BONUS	=
 #*
 #* ************************************************************************** *#
 #*                             Executable name                                *#
 #* ************************************************************************** *#
 #*
-NAME            =onto++
-DEBUG_NAME      =deb_onto++
+NAME            =ft_irc
+DEBUG_NAME      =deb_ft_irc
+BONUS_NAME      =
 #*
 #* ************************************************************************** *#
 #*                               Run Arguments                                *#
 #* ************************************************************************** *#
 #*
 RUN                     =
-DEBUG_RUN               =
 #*
 #* ************************************************************************** *#
 #*                          Compilation variables                             *#
@@ -30,96 +45,130 @@ SRCS_EXT                =.cpp
 OBJS_EXT                =.cpp.o
 HEADER_EXT              =.hpp
 DFILES_EXT              =.cpp.d
-CC                      =clang++ -std=c++98
+CC                      =c++
 ARCHIVE                 =ar rc
-CFLAG                   =-Wextra -Wall -Ofast
-DEBUG_FLAG              =-g3 -Wextra -Wall
-DFLAG                   =-MT $@ -MD -MP -MF $(DFILES_DIR)$*$(DFILES_EXT)
-CLINK                   =#
-DEPENDENCIES_PATHS      =#
+CFLAG                   =-Wextra -Wall -Werror -pedantic -Ofast -std=c++98
+DEBUG_FLAG              =-g3 -Wextra -Wall -Werror
+DFLAG                   =-MT $@ -MD -MP -MF $(DFILES_DIR)/$*$(DFILES_EXT)
+CLINK                   =
+DEPENDENCIES_PATHS      =
 #*
 #* ************************************************************************** *#
 #*                               Directories                                  *#
 #* ************************************************************************** *#
 #*
-SRCS_DIR        =src/
-INCLUDES_DIR    =include/
-OBJS_DIR        =Objects/
-DFILES_DIR      =HeaderDependencies/
-DEPENDENCIES    =Dependencies/
-DEP_INCLUDES    =
+SRCS_DIR        =src
+INCLUDES_DIR    =include
+OBJS_DIR        =Objects
+DFILES_DIR      =HeaderDependencies
+DEPENDENCIES    =Dependencies
 #*
 #* ************************************************************************** *#
 #*                                  Files                                     *#
 #* ************************************************************************** *#
 #*
-SOURCES_NAME            = \
-		console.cpp\
-		main.cpp\
-		server.cpp\
 
+SOURCES         = \
+	main.cpp server.cpp console.cpp
+
+BONUS_SOURCES   =
+
+MAIN_NAME       = \
+	main.cpp
+
+BONUS_MAIN_NAME =
 #*
 #* ************************************************************************** *#
 #*                               Conversions                                  *#
 #* ************************************************************************** *#
 #*
-SOURCES                 = $(SOURCES_NAME)
-DEPS                    =$(addprefix $(DEPENDENCIES), $(DEPENDENCIES_PATHS))
+SRCS_DIR               := $(addsuffix /, $(SRCS_DIR))
+OBJS_DIR               := $(addsuffix /, $(OBJS_DIR))
+DIRECTORIES             = $(SRCS_DIR) $(OBJS_DIR) $(DEPENDENCIES) $(DFILES_DIR) $(SOURCES)
+DEPS                    =$(addprefix $(DEPENDENCIES)/, $(DEPENDENCIES_PATHS))
 
-ifeq ($(SRCS_DIR),)
-SRCS                    =$(SOURCES)
-else
 SRCS                    =$(addprefix $(SRCS_DIR),$(SOURCES))
-endif
 
-ifeq ($(OBJS_DIR),)
-MAIN                    =$(patsubst %,%$(OBJS_EXT), $(MAIN_NAME))
-else
-MAIN                    =$(patsubst %,$(OBJS_DIR)%$(OBJS_EXT), $(MAIN_NAME))
-endif
-
-ifeq ($(OBJS_DIR),)
-OBJS                    =$(patsubst %$(SRCS_EXT),%$(OBJS_EXT), $(SOURCES))
-else
 OBJS                    =$(patsubst %$(SRCS_EXT),$(OBJS_DIR)%$(OBJS_EXT), $(SOURCES))
-endif
+
+BOBJS                   =$(patsubst %$(SRCS_EXT),$(OBJS_DIR)%$(OBJS_EXT), $(SOURCES))
 
 ifeq ($(DFILES_DIR),)
-DFS                     =$(patsubst %$(SRCS_EXT),%$(DFILES_EXT), $(SOURCES))
+DFS                     =$(patsubst %$(SRCS_EXT),%$(DFILES_EXT), $(SOURCES) $(BONUS_SOURCES))
 else
-DFS                     =$(patsubst %$(SRCS_EXT),$(DFILES_DIR)%$(DFILES_EXT), $(SOURCES))
+DFS                     =$(patsubst %$(SRCS_EXT),$(DFILES_DIR)/%$(DFILES_EXT), $(SOURCES) $(BONUS_SOURCES))
 endif
 
 CADDLINK                =$(addprefix -L, $(dir $(DEPS)))
 
-INCS                    =$(addprefix -I, $(INCLUDES_DIR) $(addprefix $(DEPENDENCIES), $(DEP_INCLUDES)))
+INCS                    =$(addprefix -I, $(INCLUDES_DIR))
 
+uniq = $(if $1,$(call uniq,$(filter-out $(lastword $1),$1)) $(lastword $1))
+
+parent_dirs = $(if $(patsubst ./%,%,$(dir $(1))),$(dir $(1)) $(call parent_dirs,$(strip $(patsubst %/,%,$(dir $(1))))))
+
+INTERMEDIATE_DIRECTORIES=$(call uniq, $(foreach path, $(sort $(foreach obj, $(OBJS) $(BOBJS) $(DFS), $(dir $(obj)))),$(call parent_dirs, $(path))))
+
+.PRECIOUS:$(INTERMEDIATE_DIRECTORIES)
 #*
 #* ************************************************************************** *#
-#*                             Directories Rules                              *#
+#*                              Directories Rule                              *#
 #* ************************************************************************** *#
 #*
 %/:
 	mkdir -p $@
-dirs: | $(SRCS_DIR) $(INCLUDES_DIR) $(DEPENDENCIES)
-.PHONY: dirs
+#*
+#* ************************************************************************** *#
+#*                                Bonus Rule                                  *#
+#* ************************************************************************** *#
+#*
+ifneq ($(HAS_BONUS),)
+ifeq ($(BONUS_NAME),$(NAME))
+bonus:
+	@$(MAKE) SOURCES="$(BONUS_SOURCES_NAME)" \
+		MAIN="$(BONUS_MAIN_NAME)" \
+		BONUS_MAIN="$(MAIN_NAME)" all
+else
+$(BONUS_NAME): $(BOBJS) $(DEPS)
+	rm -f $(BONUS_MAIN)
+	$(CC) $(CFLAG) -o $(NAME) $(OBJS) $(CADDLINK) $(CLINK)
+bonus:
+	@$(MAKE) SOURCES="$(BONUS_SOURCES_NAME)" \
+		MAIN="$(BONUS_MAIN_NAME)" \
+		BONUS_MAIN="$(MAIN_NAME)" all
+.PHONY:bonus
+endif
+endif
+#*
+#* ************************************************************************** *#
+#*                               Objects Rule                                 *#
+#* ************************************************************************** *#
+#*
+.SECONDEXPANSION:
+$(OBJS_DIR)%$(OBJS_EXT): $(SRCS_DIR)%$(SRCS_EXT) | \
+		$$(dir $$@) \
+		$$(dir $$(DFILES_DIR)/$$*$$(DFILES_EXT))
+	$(CC) $(CFLAG) $(INCS) -c $< -o $@ $(DFLAG)
+
+include $(wildcard $(DFS))
 #*
 #* ************************************************************************** *#
 #*                            Dependencies rules                              *#
 #* ************************************************************************** *#
 #*
 %.a:
-	$(MAKE) -C $(dir $@)
-#.PHONY: $(DEPS)
+	(cd $(dir $@) && $(MAKE))
 #*
 #* ************************************************************************** *#
 #*                             Compilation Rule                               *#
 #* ************************************************************************** *#
 ifneq ($(LIBRARY),)
-$(NAME): $(OBJS) $(DEPS)
+$(NAME): $(OBJS)
+	rm -f $(BONUS_MAIN)
 	$(ARCHIVE) $(NAME) $(OBJS)
 else
-$(NAME): $(OBJS) $(DEPS)
+$(NAME): $(OBJS)
+	rm -f $(BONUS_MAIN)
 	$(CC) $(CFLAG) -o $(NAME) $(OBJS) $(CADDLINK) $(CLINK)
 endif
 compile: $(NAME)
@@ -139,9 +188,7 @@ drun: debug_run
 r: run
 
 dr: drun
-
-der: drun
-.PHONY: run debug_run drun r dr der
+.PHONY: run debug_run drun r dr
 endif
 #*
 #* ************************************************************************** *#
@@ -150,6 +197,7 @@ endif
 #*
 ifeq ($(LIBRARY),)
 $(DEBUG_NAME): $(SRCS)
+	rm -f $(BONUS_MAIN)
 	$(CC) $(DEBUG_FLAG) $(INCS) -o $(DEBUG_NAME) $(SRCS) $(CADDLINK) $(CLINK)
 debug: $(DEBUG_NAME)
 
@@ -164,36 +212,34 @@ endif
 #*                                    Cleanup                                 *#
 #* ************************************************************************** *#
 #*
-CLEAN_FILES= $(wildcard $(sort $(OBJS) $(BOBJS) $(DFS) $(OBJS_DIR) $(DFILES_DIR)) $(BDFS))
+CLEAN_FILES= $(wildcard $(sort $(OBJS) $(BOBJS) $(DFS)))
 FCLEAN_FILES= $(wildcard $(NAME) $(DEBUG_NAME))
+CLEAN_DIRS= $(wildcard $(INTERMEDIATE_DIRECTORIES))
 
 clean:
 ifneq ($(CLEAN_FILES),)
-	rm -fd $(CLEAN_FILES)
+	rm -f $(CLEAN_FILES)
+endif
+ifneq ($(CLEAN_DIRS),)
+	rm -d $(CLEAN_DIRS)
 endif
 
 fclean: clean
 ifneq ($(FCLEAN_FILES),)
-	rm -fd $(FCLEAN_FILES)
+	rm -f $(FCLEAN_FILES)
 endif
 
 re: fclean all
 
 remake: re
 
-.PHONY: clean fclean re remake
-#*
-#* ************************************************************************** *#
-#*                               Objects Rule                                 *#
-#* ************************************************************************** *#
-#*
-.SECONDEXPANSION:
-$(OBJS_DIR)%$(OBJS_EXT): $(SRCS_DIR)%$(SRCS_EXT) | \
-		$$(dir $$@) \
-		$$(dir $$(DFILES_DIR)$$*$$(DFILES_EXT))
-	$(CC) $(CFLAG) $(INCS) -c $< -o $@ $(DFLAG)
+test:
+	@echo "$(SRCS)"
+	@echo "$(OBJS)"
+	@echo '$(SUBDIRECTORIES)'
+	@echo "$(INTERMEDIATE_DIRECTORIES)"
 
-include $(wildcard $(DFS))
+.PHONY: clean fclean re remake
 #*
 #* ************************************************************************** *#
 #*                                   Appendix                                 *#
