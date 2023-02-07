@@ -47,6 +47,7 @@ public:
 	//TODO
 	void shutdown();
     void sendMessage(fd_t fd, const std::string &message); // Для отправки сообщения юзеру с заданым дескриптором. Список юзеров хранится в users.
+	void maintainMessege(fd_t fd, const std::string &messege);
 
     void setPassword(const std::string& password) { m_password = password; }
     const std::string& getPassword() const { return m_password; }

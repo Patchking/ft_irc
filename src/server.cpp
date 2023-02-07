@@ -98,6 +98,7 @@ void Server::run_iteration() {
 				// , что ты вставишь ниже
 				// . Для доступа к сообщению - "it->second.readbuffer"
 				sendMessage(0, it->second.readbuffer);
+				maintainMessege(it->first, it->second.readbuffer);
 				// - это пример
 				// . Сервер пытается отправить всем доступным хостам
 				// ответное сообщение.
@@ -144,6 +145,11 @@ void Server::sendMessage(fd_t fd, const std::string &message)
 		abort();
 	}
 	m_connections[fd].writebuffer += message;
+}
+
+void Server::maintainMessege(fd_t fd, const std::string &messege)
+{
+	// Здесь должна быть твоя функция. fd - файловый дескриптор отправителя
 }
 
 void Server::terminateConnection(fd_t fd)
