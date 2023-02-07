@@ -147,11 +147,6 @@ void Server::sendMessage(fd_t fd, const std::string &message)
 	m_connections[fd].writebuffer += message;
 }
 
-void Server::maintainMessege(fd_t fd, const std::string &messege)
-{
-	// Здесь должна быть твоя функция. fd - файловый дескриптор отправителя
-}
-
 void Server::terminateConnection(fd_t fd)
 {
 	m_connections.erase(fd);
