@@ -47,32 +47,32 @@ Server::Server(int port_, std::string passwd) : port(port_)
 
 inline
 void Server::run_iteration() {
-	users_type::iterator save;
+	connections_type::iterator save;
 	Console::log("updated: ", m_dt, Console::DEBUG);
 	// Поиск новых соединений. Если успешно, сохранине информации о соединении
 	{
 		struct sockaddr_in csin;
 		socklen_t csin_len;
 
-		fd_t new_user_descr
+		fd_t new_connection_descr
 			= accept(m_sock, (struct sockaddr *)&csin, &csin_len);
-		if (new_user_descr > 0) {
-			if (fcntl(new_user_descr, F_SETFL, O_NONBLOCK) < 0) {
+		if (new_connection_descr > 0) {
+			if (fcntl(new_connection_descr, F_SETFL, O_NONBLOCK) < 0) {
 				Console::log("fcntl() error", Console::GENERAL);
 				Console::log(strerror(errno), Console::GENERAL);
 				abort();
 			}
 			Console::log("New incoming connection #"
-					, new_user_descr, Console::LOG);
-			m_users[new_user_descr].fd = new_user_descr;
-			m_users[new_user_descr].netstat = csin;
+					, new_connection_descr, Console::LOG);
+			m_connections[new_connection_descr].fd = new_connection_descr;
+			m_connections[new_connection_descr].netstat = csin;
 		}
 	}
 
 	// Попытка прочитать fd всех текущих соединений.
 	// В случае успешного чтения передает управление логике
 	// , в случае разрыва соединения удалет информацию о соединении.
-	for (users_type::iterator it = m_users.begin(); it != m_users.end();) {
+	for (connections_type::iterator it = m_connections.begin(); it != m_connections.end();) {
 		char buffer[MESSAGE_MAX_LEN];
 		buffer[0] = '\0';
 		Console::log("recv called with: [", it->first, "]");
@@ -87,7 +87,7 @@ void Server::run_iteration() {
 				Console::log("User ", it->first, " disconnected", Console::LOG);
 				save = it;
 				++it;
-				m_users.erase(save);
+				m_connections.erase(save);
 				continue ;
 			break; case USER_STOPPED_WRITING:
 				if (it->second.readbuffer.empty())
@@ -112,7 +112,7 @@ void Server::run_iteration() {
 		it++;
 	}
 
-	for (users_type::iterator it = m_users.begin(); it != m_users.end(); ++it) {
+	for (connections_type::iterator it = m_connections.begin(); it != m_connections.end(); ++it) {
 		if (!it->second.writebuffer.empty()) {
 			send(it->first, it->second.writebuffer.c_str()
 					, it->second.writebuffer.size(), 0);
@@ -134,21 +134,21 @@ void Server::run()
 void Server::sendMessage(fd_t fd, const std::string &message)
 {
 	if (fd == 0) {
-		for (users_type::iterator it = m_users.begin(); it != m_users.end(); ++it) {
+		for (connections_type::iterator it = m_connections.begin(); it != m_connections.end(); ++it) {
 			it->second.writebuffer += message;
 		}
 		return ;
 	}
-	if (m_users.find(fd) == m_users.end()) {
+	if (m_connections.find(fd) == m_connections.end()) {
 		Console::log("SendMessage error. No such fd ", fd, Console::GENERAL);
 		abort();
 	}
-	m_users[fd].writebuffer += message;
+	m_connections[fd].writebuffer += message;
 }
 
-void Server::disconnect_user(fd_t fd)
+void Server::terminateConnection(fd_t fd)
 {
-	m_users.erase(fd);
+	m_connections.erase(fd);
 }
 
 }

@@ -28,10 +28,10 @@ class IrcServer : public Server {
 			REG, OP
 		} mode;
 	};
-	typedef std::vector<std::pair<fd_t, user_type*> > online_users_type;
 
+	typedef std::map<fd_t, user_type> users_type;
 	typedef bool (IrcServer::*const command_function_type)(const char*&);
-
+	typedef Command command_type;
 
 	bool admin(const char*& arguments);
 	bool away(const char*& arguments);
@@ -79,9 +79,6 @@ class IrcServer : public Server {
 	bool who(const char*& arguments);
 	bool whois(const char*& arguments);
 	bool whowas(const char*& arguments);
-
-	typedef Command command_type;
-
 
 	public:
 	void handleCommand(const char *message);

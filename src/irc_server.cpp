@@ -31,47 +31,58 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 		, &IrcServer::wallops, &IrcServer::who, &IrcServer::whois
 		, &IrcServer::whowas
 };
-
+//ADMIN [<server>]
 	bool IrcServer::admin(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//AWAY [<message>]
 	bool IrcServer::away(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//CONNECT <target server> [<port> [<remote server>]] (RFC 1459)
+//<target server> <port> [<remote server>] ( RFC 2812)
 	bool IrcServer::connect(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//DIE 	Tells the server to shut down.[5] 	RFC 281
 	bool IrcServer::die(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//ERROR <error message>
 	bool IrcServer::error(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//INFO [<target>]
 	bool IrcServer::info(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//INVITE <nickname> <channel>
 	bool IrcServer::invite(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//ISON <nicknames>
 	bool IrcServer::ison(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//JOIN <channels> [<keys>]
 	bool IrcServer::join(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//KICK <channel> <client> [<message>]
 	bool IrcServer::kick(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//KILL <client> <comment> [<remote server> [<server mask>]]
 	bool IrcServer::kill(const char*& arguments) {
 		(void)arguments;
 		return true;
@@ -80,134 +91,172 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 		(void)arguments;
 		return true;
 	}
+//LIST [<channels> [<server>]]
 	bool IrcServer::list(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//LUSERS [<mask> [<server>]]
 	bool IrcServer::luser(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//MODE <nickname> <flags> (user)
+//<channel> <flags> [<args>]
 	bool IrcServer::mode(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//MOTD [<server>]
 	bool IrcServer::motd(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//NAMES [<channels>] (RFC 1459)
+//[<channels> [<server>]] ( RFC 2812)
 	bool IrcServer::names(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//NICK <nickname> [<hopcount>] (RFC 1459)
+//<nickname>
 	bool IrcServer::nick(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//NOTICE <msgtarget> <message>
 	bool IrcServer::notice(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//OPER <username> <password>
 	bool IrcServer::oper(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//PART <channels>
 	bool IrcServer::part(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//PASS <password>
 	bool IrcServer::pass(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//PING <server1> [<server2>]
 	bool IrcServer::ping(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//PONG <server2> [<server2>]
 	bool IrcServer::pong(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//PRIVMSG <msgtarget> <message>
 	bool IrcServer::privmsg(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//QUIT [<message>]
 	bool IrcServer::quit(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//REHASH
 	bool IrcServer::rehash(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//RESTART
 	bool IrcServer::restart(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//SERVICE <nickname> <reserved> <distribution> <type> <reserved> <info>
 	bool IrcServer::service(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//SERVLIST [<mask> [<type>]]
 	bool IrcServer::servlist(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//SERVER <servername> <hopcount> <info>
 	bool IrcServer::server(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//SQUERY <servicename> <text>
 	bool IrcServer::squery(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//SQUIT <server> <comment>
 	bool IrcServer::squit(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//STATS <query> [<server>]
 	bool IrcServer::stats(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//SUMMON <user> [<server>] (RFC 1459)
+//<user> [<server> [<channel>]] (RFC 2812)
 	bool IrcServer::summon(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//TIME [<server>]
 	bool IrcServer::time(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//TOPIC <channel> [<topic>]
 	bool IrcServer::topic(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//TRACE [<target>]
 	bool IrcServer::trace(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//USER <username> <hostname> <servername> <realname> (RFC 1459)
+//<user> <mode> <unused> <realname> ( RFC 2812)
 	bool IrcServer::user(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//USERHOST <nickname> [<nickname> <nickname> ...]
 	bool IrcServer::userhost(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//USERS [<server>]
 	bool IrcServer::users(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//VERSION [<server>]
 	bool IrcServer::version(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//WALLOPS <message>
 	bool IrcServer::wallops(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//WHO [<name> ["o"]]
 	bool IrcServer::who(const char*& arguments) {
 		(void)arguments;
 		return true;
 	}
+//WHOIS [<server>] <nicknames>
 	bool IrcServer::whois(const char*& arguments) {
 		(void)arguments;
 		return true;
@@ -217,60 +266,6 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 		return true;
 	}
 
-/*
-ADMIN 	ADMIN [<server>]
-AWAY 	AWAY [<message>]
-CONNECT 	CONNECT <target server> [<port> [<remote server>]] (RFC 1459)
-CONNECT <target server> <port> [<remote server>] ( RFC 2812)
-DIE 	DIE 	Tells the server to shut down.[5] 	RFC 281
-ERROR 	ERROR <error message>
-INFO 	INFO [<target>]
-INVITE 	INVITE <nickname> <channel>
-ISON 	ISON <nicknames>
-JOIN 	JOIN <channels> [<keys>]
-KICK 	KICK <channel> <client> [<message>]
-KILL 	KILL <client> <comment>
-LINKS [<remote server> [<server mask>]]
-LIST 	LIST [<channels> [<server>]]
-LUSERS 	LUSERS [<mask> [<server>]]
-MODE 	MODE <nickname> <flags> (user)
-MODE <channel> <flags> [<args>]
-MOTD 	MOTD [<server>]
-NAMES 	NAMES [<channels>] (RFC 1459)
-NAMES [<channels> [<server>]] ( RFC 2812)
-NICK 	NICK <nickname> [<hopcount>] (RFC 1459)
-NICK <nickname>
-NOTICE 	NOTICE <msgtarget> <message>
-OPER 	OPER <username> <password>
-PART 	PART <channels>
-PASS 	PASS <password>
-PING 	PING <server1> [<server2>]
-PONG 	PONG <server2> [<server2>]
-PRIVMSG 	PRIVMSG <msgtarget> <message>
-QUIT 	QUIT [<message>]
-REHASH 	REHASH
-RESTART 	RESTART
-SERVICE 	SERVICE <nickname> <reserved> <distribution> <type> <reserved> <info>
-SERVLIST 	SERVLIST [<mask> [<type>]]
-SERVER 	SERVER <servername> <hopcount> <info>
-SQUERY 	SQUERY <servicename> <text>
-SQUIT 	SQUIT <server> <comment>
-STATS 	STATS <query> [<server>]
-SUMMON 	SUMMON <user> [<server>] (RFC 1459)
-SUMMON <user> [<server> [<channel>]] (RFC 2812)
-TIME 	TIME [<server>]
-TOPIC 	TOPIC <channel> [<topic>]
-TRACE 	TRACE [<target>]
-USER 	USER <username> <hostname> <servername> <realname> (RFC 1459)
-USER <user> <mode> <unused> <realname> ( RFC 2812)
-USERHOST 	USERHOST <nickname> [<nickname> <nickname> ...]
-USERS 	USERS [<server>]
-VERSION 	VERSION [<server>]
-WALLOPS 	WALLOPS <message>
-WHO 	WHO [<name> ["o"]]
-WHOIS 	WHOIS [<server>] <nicknames>
-WHOWAS 	WHOWAS <nickname> [<count> [<server>]]
-*/
 static inline
 void skip_space(const char*& str) {
 	for (;std::isspace(*str); ++str);
