@@ -47,6 +47,7 @@ Server::Server(int port_, std::string passwd) : port(port_)
 
 inline
 void Server::run_iteration() {
+	users_type::iterator save;
 	Console::log("updated: ", m_dt, Console::DEBUG);
 	// Поиск новых соединений. Если успешно, сохранине информации о соединении
 	{
@@ -74,9 +75,9 @@ void Server::run_iteration() {
 	for (users_type::iterator it = m_users.begin(); it != m_users.end();) {
 		char buffer[MESSAGE_MAX_LEN];
 		buffer[0] = '\0';
-		Console::log("recv called with: [", it->first, ", ", buffer, "]");
+		Console::log("recv called with: [", it->first, "]");
 		ssize_t result = recv(it->first, buffer, MESSAGE_MAX_LEN - 1, 0);
-		Console::log("Left recv");
+		Console::log("Left recv ", buffer);
 		enum {
 			USER_DISCONNECTED = 0,
 			USER_STOPPED_WRITING = -1
@@ -84,12 +85,14 @@ void Server::run_iteration() {
 		switch (result) {
 			case USER_DISCONNECTED:
 				Console::log("User ", it->first, " disconnected", Console::LOG);
-				it = m_users.erase(it);
+				save = it;
+				++it;
+				m_users.erase(save);
 				continue ;
 			break; case USER_STOPPED_WRITING:
 				if (it->second.readbuffer.empty())
 					break;
-				Console::log("User #", it->first, "sends message");
+				Console::log("User #", it->first, " sends message");
 				Console::log(it->second.readbuffer, Console::LOG);
 				// При получении сообщения вызывается то
 				// , что ты вставишь ниже
