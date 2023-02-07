@@ -45,9 +45,9 @@ Server::Server(int port_, std::string passwd) : port(port_)
 	}
 }
 
-inline
-void Server::run_iteration() {
-	connections_type::iterator save;
+
+void Server::run() {
+	out.clear();
 	Console::log("updated: ", m_dt, Console::DEBUG);
 	// Поиск новых соединений. Если успешно, сохранине информации о соединении
 	{
@@ -75,9 +75,7 @@ void Server::run_iteration() {
 	for (connections_type::iterator it = m_connections.begin(); it != m_connections.end();) {
 		char buffer[MESSAGE_MAX_LEN];
 		buffer[0] = '\0';
-		Console::log("recv called with: [", it->first, "]");
 		ssize_t result = recv(it->first, buffer, MESSAGE_MAX_LEN - 1, 0);
-		Console::log("Left recv ", buffer);
 		enum {
 			USER_DISCONNECTED = 0,
 			USER_STOPPED_WRITING = -1
@@ -85,9 +83,9 @@ void Server::run_iteration() {
 		switch (result) {
 			case USER_DISCONNECTED:
 				Console::log("User ", it->first, " disconnected", Console::LOG);
-				save = it;
-				++it;
-				m_connections.erase(save);
+				out.push_back(message_type(DISCONNECTED,
+									it->first, NULL));
+				m_connections.erase(it++);
 				continue ;
 			break; case USER_STOPPED_WRITING:
 				if (it->second.readbuffer.empty())
@@ -97,8 +95,9 @@ void Server::run_iteration() {
 				// При получении сообщения вызывается то
 				// , что ты вставишь ниже
 				// . Для доступа к сообщению - "it->second.readbuffer"
-				sendMessage(0, it->second.readbuffer);
-				maintainMessege(it->first, it->second.readbuffer);
+				// sendMessage(0, it->second.readbuffer);
+				out.push_back(message_type(MESSAGE_RECIEVED,
+									it->first, it->second.readbuffer.c_str()));
 				// - это пример
 				// . Сервер пытается отправить всем доступным хостам
 				// ответное сообщение.
@@ -123,13 +122,6 @@ void Server::run_iteration() {
 
 	usleep(100000); // Таймер логики. Можно редактировать, как вздумается
 	++m_dt;
-}
-
-void Server::run()
-{
-	while (1) {
-		run_iteration();
-	}
 }
 
 void Server::sendMessage(fd_t fd, const std::string &message)

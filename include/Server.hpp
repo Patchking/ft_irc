@@ -4,6 +4,7 @@
 #include <string>
 #include <string.h>
 #include <map>
+#include <vector>
 #include <unistd.h>
 #include <errno.h>
 #include "Console.hpp"
@@ -28,6 +29,11 @@ public:
 		, SERVER_TERMINATED//idk
 	};
 	struct message_type {
+		message_type(event_type event_, fd_t fd_, const char *message_) {
+			event = event_;
+			fd = fd_;
+			message = message_;
+		}
 		event_type event;
 		fd_t fd;
 		const char *message;//may be of other string type
@@ -47,7 +53,6 @@ public:
 	//TODO
 	void shutdown();
     void sendMessage(fd_t fd, const std::string &message); // Для отправки сообщения юзеру с заданым дескриптором. Список юзеров хранится в users.
-	void maintainMessege(fd_t fd, const std::string &messege);
 
     void setPassword(const std::string& password) { m_password = password; }
     const std::string& getPassword() const { return m_password; }
@@ -55,9 +60,7 @@ public:
     connections_type& getConnections() { return m_connections; }
     int getSockFd() { return m_sock; }
 private:
-	//TODO should not exist
-	void run_iteration();
-private:
+	std::vector<struct message_type> out;
     int m_dt;
     int m_sock;
     const int port;
