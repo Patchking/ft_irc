@@ -3,6 +3,34 @@
 
 namespace ft_irc {
 
+static inline
+void skip_all_space(const char*& str) {
+	for (;std::isspace(*str); ++str);
+}
+
+static inline
+void skip_space(const char*& str) {
+	for (;*str != '\n' && std::isspace(*str); ++str);
+}
+
+static inline
+void skip_nonspace(const char*& str) {
+	for (;*str && !std::isspace(*str); ++str);
+}
+
+static inline
+bool obtain_word(const char*& begin, const char*& end) {
+	skip_space(begin);
+	end = begin;
+	skip_nonspace(end);
+	return end != begin;
+}
+
+static inline
+void skip_line(char const*& str) {
+	for (;*str && *str != '\n';++str);
+}
+
 const char *const IrcServer::commands[46] = {
 		"ADMIN", "AWAY", "CONNECT", "DIE", "ERROR", "INFO", "INVITE", "ISON"
 			, "JOIN", "KICK", "KILL", "LINKS", "LIST", "LUSER", "MODE", "MOTD"
@@ -141,8 +169,12 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 	}
 //PASS <password>
 	bool IrcServer::pass(const char*& arguments) {
-		(void)arguments;
-		return true;
+		const char *end;
+		obtain_word(arguments, end);
+		currentUser().password.append(arguments, end);
+		arguments = end;
+		skip_line(arguments);
+		return Server::getPassword() != currentUser().password;
 	}
 //PING <server1> [<server2>]
 	bool IrcServer::ping(const char*& arguments) {
@@ -267,15 +299,6 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 	}
 
 static inline
-void skip_space(const char*& str) {
-	for (;std::isspace(*str); ++str);
-}
-static inline
-void skip_nonspace(const char*& str) {
-	for (;*str && !std::isspace(*str); ++str);
-}
-
-static inline
 int strcmp_spacecheck(const char* lhs, const char* rhs) {
 	while (*lhs == *rhs)
 		++lhs, ++rhs;
@@ -285,11 +308,11 @@ int strcmp_spacecheck(const char* lhs, const char* rhs) {
 }
 
 void IrcServer::handleCommand(const char *message) {
-	skip_space(message);
+	skip_all_space(message);
 	while (*message) {
 		char const* const* l = commands;
-		char const* const* m = commands + sizeof commands / (sizeof *commands * 2);
-		char const* const* r = commands + sizeof commands / (sizeof *commands);
+		char const* const* m = commands + sizeof commands / sizeof *commands / 2;
+		char const* const* r = commands + sizeof commands / sizeof *commands;
 		bool found = false;
 		while (l + 1 != r) {
 			const int cmp = strcmp_spacecheck(message, *m);
@@ -311,9 +334,27 @@ void IrcServer::handleCommand(const char *message) {
 		if (found) {
 			int command_id = m - commands;
 			skip_nonspace(message);
-			(this->*command_functions[command_id])(message);
+			if (!(this->*command_functions[command_id])(message)) {
+				terminateConnection();
+				return;
+			}
 		}
 	}
+}
+
+inline
+void IrcServer::terminateConnection() {
+	terminateConnection(m_currentFd);
+}
+inline
+void IrcServer::terminateConnection(fd_t fd) {
+	Server::terminateConnection(fd);
+	m_users.erase(m_currentUser);
+	m_currentUser = m_users.end();
+}
+
+IrcServer::user_type& IrcServer::currentUser() {
+	return m_currentUser->second;
 }
 
 }

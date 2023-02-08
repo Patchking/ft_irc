@@ -32,6 +32,7 @@ class IrcServer : public Server {
 	typedef std::map<fd_t, user_type> users_type;
 	typedef bool (IrcServer::*const command_function_type)(const char*&);
 	typedef Command command_type;
+	typedef Server::message_type message_type;
 
 	bool admin(const char*& arguments);
 	bool away(const char*& arguments);
@@ -82,10 +83,17 @@ class IrcServer : public Server {
 
 	public:
 	void handleCommand(const char *message);
+	void terminateConnection();
+	void terminateConnection(fd_t fd);
 
 	static const char *const commands[46];
 	static const command_function_type command_functions[46];
 	private:
+	user_type& currentUser();
+	private:
+	users_type m_users;
+	users_type::iterator m_currentUser;
+	fd_t m_currentFd;
 };
 
 }//namespace ft_irc
