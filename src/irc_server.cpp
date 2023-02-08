@@ -174,12 +174,7 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 		currentUser().password.append(arguments, end);
 		arguments = end;
 		skip_line(arguments);
-		if (Server::getPassword() != currentUser().password) {
-			terminateConnection(m_currentFd);
-			return false;
-		}
-		(void)arguments;
-		return true;
+		return Server::getPassword() != currentUser().password;
 	}
 //PING <server1> [<server2>]
 	bool IrcServer::ping(const char*& arguments) {
@@ -339,10 +334,25 @@ void IrcServer::handleCommand(const char *message) {
 		if (found) {
 			int command_id = m - commands;
 			skip_nonspace(message);
-			(this->*command_functions[command_id])(message);
+			if (!(this->*command_functions[command_id])(message)) {
+				terminateConnection();
+				return;
+			}
 		}
 	}
 }
+
+inline
+void IrcServer::terminateConnection() {
+	terminateConnection(m_currentFd);
+}
+inline
+void IrcServer::terminateConnection(fd_t fd) {
+	Server::terminateConnection(fd);
+	m_users.erase(m_currentUser);
+	m_currentUser = m_users.end();
+}
+
 IrcServer::user_type& IrcServer::currentUser() {
 	return m_currentUser->second;
 }
