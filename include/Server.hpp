@@ -7,6 +7,7 @@
 #include <vector>
 #include <unistd.h>
 #include <errno.h>
+#include <poll.h>
 #include "Console.hpp"
 #include "main.hpp"
 #include "User.hpp"
@@ -42,7 +43,7 @@ public:
 public:
     Server(int port_, std::string passwd);
 	//TODO should not exist
-    void run();
+    std::vector<struct message_type> run();
 
 	//TODO (if no messages, should wait for a message)
 	//should perform other work like pinging connections.
@@ -60,7 +61,9 @@ public:
     connections_type& getConnections() { return m_connections; }
     int getSockFd() { return m_sock; }
 private:
+	void addRecordToFds(int fd);
 	std::vector<struct message_type> out;
+	struct pollfd fds[MAX_CONNECTION];
     int m_dt;
     int m_sock;
     const int port;

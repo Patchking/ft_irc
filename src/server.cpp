@@ -43,12 +43,22 @@ Server::Server(int port_, std::string passwd) : port(port_)
 		Console::log(strerror(errno), Console::GENERAL);
 		abort();
 	}
+	addRecordToFds(m_sock);
 }
 
 
-void Server::run() {
-	out.clear();
+std::vector<struct message_type> Server::run() {
+	while (1) {
 	Console::log("updated: ", m_dt, Console::DEBUG);
+	out.clear();
+	{
+		int pull_return = poll(fds + m_sock * 2 + 2, m_connections.size() * 2, 1);
+		if (pull_return < 0) {
+			Console::log("Pull returned error, but im not sure what does this mean", Console::GENERAL);
+			Console::log(strerror(errno), Console::GENERAL);
+		}
+	}
+
 	// Поиск новых соединений. Если успешно, сохранине информации о соединении
 	{
 		struct sockaddr_in csin;
@@ -66,6 +76,7 @@ void Server::run() {
 					, new_connection_descr, Console::LOG);
 			m_connections[new_connection_descr].fd = new_connection_descr;
 			m_connections[new_connection_descr].netstat = csin;
+			addRecordToFds(new_connection_descr);
 		}
 	}
 
@@ -73,55 +84,56 @@ void Server::run() {
 	// В случае успешного чтения передает управление логике
 	// , в случае разрыва соединения удалет информацию о соединении.
 	for (connections_type::iterator it = m_connections.begin(); it != m_connections.end();) {
-		char buffer[MESSAGE_MAX_LEN];
-		buffer[0] = '\0';
-		ssize_t result = recv(it->first, buffer, MESSAGE_MAX_LEN - 1, 0);
-		enum {
-			USER_DISCONNECTED = 0,
-			USER_STOPPED_WRITING = -1
-		};
-		switch (result) {
-			case USER_DISCONNECTED:
-				Console::log("User ", it->first, " disconnected", Console::LOG);
-				out.push_back(message_type(DISCONNECTED,
-									it->first, NULL));
-				m_connections.erase(it++);
-				continue ;
-			break; case USER_STOPPED_WRITING:
-				if (it->second.readbuffer.empty())
-					break;
-				Console::log("User #", it->first, " sends message");
-				Console::log(it->second.readbuffer, Console::LOG);
-				// При получении сообщения вызывается то
-				// , что ты вставишь ниже
-				// . Для доступа к сообщению - "it->second.readbuffer"
-				// sendMessage(0, it->second.readbuffer);
-				out.push_back(message_type(MESSAGE_RECIEVED,
-									it->first, it->second.readbuffer.c_str()));
-				// - это пример
-				// . Сервер пытается отправить всем доступным хостам
-				// ответное сообщение.
+		if (fds[it->first * 2].revents & POLLIN) {
+			fds[it->first * 2].revents = 0;
+			char buffer[BUFFER_LEN];
+			buffer[0] = '\0';
+			ssize_t result = recv(it->first, buffer, BUFFER_LEN - 1, 0);
+			enum {
+				USER_DISCONNECTED = 0,
+				ERR_OCCURED = -1
+			};
+			switch (result) {
+				case USER_DISCONNECTED:
+					Console::log("User ", it->first, " disconnected", Console::LOG);
+					out.push_back(message_type(DISCONNECTED,
+										it->first, NULL));
+					m_connections.erase(it++);
+					continue ;
+				break; case ERR_OCCURED:
+					Console::log("recv() error", Console::GENERAL);
+					Console::log(strerror(errno), Console::GENERAL);
+				break; default:
+					Console::log("User #", it->first, " message updated", Console::DEBUG);
+					buffer[result] = '\0';
+					it->second.readbuffer += buffer;
+			}
+		} else if (!it->second.readbuffer.empty()) {
+			Console::log("User #", it->first, " sends message");
+			Console::log(it->second.readbuffer, Console::LOG);
+			out.push_back(message_type(MESSAGE_RECIEVED,
+						it->first, it->second.readbuffer.c_str()));
+			it->second.readbuffer.erase();
+		}
 
-				// Пример заканчивается здесь.
-				it->second.readbuffer.erase();
-			break; default:
-				Console::log("User #", it->first, "message updated");
-				buffer[result] = '\0';
-				it->second.readbuffer += buffer;
+		// Переместил отправка сообщений в цикл вместе с примом сообещний
+		if (!it->second.writebuffer.empty() && fds[it->first * 2 + 1].revents & POLLOUT) {
+			fds[it->first * 2 + 1].revents = 0;
+			int send_result = send(it->first, it->second.writebuffer.c_str()
+					, it->second.writebuffer.size(), 0);
+			if (send_result < 0) {
+				Console::log("send() error. Not sure is it error", Console::GENERAL);
+				Console::log(strerror(errno), Console::GENERAL);
+			}
+			it->second.writebuffer.erase();
 		}
 		it++;
 	}
 
-	for (connections_type::iterator it = m_connections.begin(); it != m_connections.end(); ++it) {
-		if (!it->second.writebuffer.empty()) {
-			send(it->first, it->second.writebuffer.c_str()
-					, it->second.writebuffer.size(), 0);
-			it->second.writebuffer.erase();
-		}
-	}
-
-	usleep(100000); // Таймер логики. Можно редактировать, как вздумается
+	usleep(300000); // Таймер логики. Можно редактировать, как вздумается
 	++m_dt;
+	}
+	return out;
 }
 
 void Server::sendMessage(fd_t fd, const std::string &message)
@@ -133,10 +145,25 @@ void Server::sendMessage(fd_t fd, const std::string &message)
 		return ;
 	}
 	if (m_connections.find(fd) == m_connections.end()) {
-		Console::log("SendMessage error. No such fd ", fd, Console::GENERAL);
+		Console::log("SendMessage error. No such fd in user list. fd: ", fd, Console::GENERAL);
+		Console::log("Program reached state which should be unreachable.", Console::GENERAL);
 		abort();
 	}
 	m_connections[fd].writebuffer += message;
+}
+
+void Server::addRecordToFds(int fd)
+{
+	if (fd * 2 >= MAX_CONNECTION) {
+		Console::log("Out of fd on server", Console::GENERAL);
+		abort();
+	}
+	fds[fd * 2].fd = fd;
+	fds[fd * 2].events = POLLIN;
+	fds[fd * 2].revents = 0;
+	fds[fd * 2 + 1].fd = fd;
+	fds[fd * 2 + 1].events = POLLOUT;
+	fds[fd * 2 + 1].revents = 0;
 }
 
 void Server::terminateConnection(fd_t fd)

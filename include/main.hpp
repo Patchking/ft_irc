@@ -1,7 +1,8 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#define MESSAGE_MAX_LEN 64
+#define BUFFER_LEN 512
+#define MAX_CONNECTION 1024
 
 #include "cstring"
 #include "Console.hpp"
