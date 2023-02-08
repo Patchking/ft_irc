@@ -43,7 +43,7 @@ public:
 public:
     Server(int port_, std::string passwd);
 	//TODO should not exist
-    const std::vector<struct message_type>& run();
+    const std::vector<struct message_type>& getMessage();
 
 	//TODO (if no messages, should wait for a message)
 	//should perform other work like pinging connections.
@@ -63,7 +63,7 @@ public:
 private:
 	void addRecordToFds(int fd);
 	std::vector<struct message_type> out;
-	struct pollfd fds[MAX_CONNECTION];
+	struct pollfd fds[MAX_CONNECTION * 2];
     int m_dt;
     int m_sock;
     const int port;

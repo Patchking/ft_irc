@@ -47,8 +47,7 @@ Server::Server(int port_, std::string passwd) : port(port_)
 }
 
 //const reference so that it does not get copied.
-const std::vector<Server::message_type>& Server::run() {
-	while (1) {
+const std::vector<Server::message_type>& Server::getMessage() {
 	Console::log("updated: ", m_dt, Console::DEBUG);
 	out.clear();
 	{
@@ -60,7 +59,7 @@ const std::vector<Server::message_type>& Server::run() {
 	}
 
 	// Поиск новых соединений. Если успешно, сохранине информации о соединении
-	{
+	if (m_connections.size() > 0 && (--m_connections.end())->first < MAX_CONNECTION) {
 		struct sockaddr_in csin;
 		socklen_t csin_len;
 
@@ -76,7 +75,7 @@ const std::vector<Server::message_type>& Server::run() {
 					, new_connection_descr, Console::LOG);
 			m_connections[new_connection_descr].fd = new_connection_descr;
 			m_connections[new_connection_descr].netstat = csin;
-			addRecordToFds(new_connection_descr);
+			// addRecordToFds(new_connection_descr);
 		}
 	}
 
@@ -129,10 +128,7 @@ const std::vector<Server::message_type>& Server::run() {
 		}
 		it++;
 	}
-
-	usleep(300000); // Таймер логики. Можно редактировать, как вздумается
 	++m_dt;
-	}
 	return out;
 }
 
