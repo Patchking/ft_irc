@@ -43,7 +43,7 @@ public:
 public:
     Server(int port_, std::string passwd);
 	//TODO should not exist
-    std::vector<struct message_type> run();
+    const std::vector<struct message_type>& run();
 
 	//TODO (if no messages, should wait for a message)
 	//should perform other work like pinging connections.

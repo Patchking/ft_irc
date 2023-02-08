@@ -46,8 +46,8 @@ Server::Server(int port_, std::string passwd) : port(port_)
 	addRecordToFds(m_sock);
 }
 
-
-std::vector<struct message_type> Server::run() {
+//const reference so that it does not get copied.
+const std::vector<Server::message_type>& Server::run() {
 	while (1) {
 	Console::log("updated: ", m_dt, Console::DEBUG);
 	out.clear();
