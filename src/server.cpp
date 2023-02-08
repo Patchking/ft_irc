@@ -59,7 +59,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 	}
 
 	// Поиск новых соединений. Если успешно, сохранине информации о соединении
-	if (m_connections.size() > 0 && (--m_connections.end())->first < MAX_CONNECTION) {
+	{
 		struct sockaddr_in csin;
 		socklen_t csin_len;
 
@@ -75,7 +75,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 					, new_connection_descr, Console::LOG);
 			m_connections[new_connection_descr].fd = new_connection_descr;
 			m_connections[new_connection_descr].netstat = csin;
-			// addRecordToFds(new_connection_descr);
+			addRecordToFds(new_connection_descr);
 		}
 	}
 
