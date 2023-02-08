@@ -1,5 +1,6 @@
 #include "main.hpp"
 #include <Abort.hpp>
+#include <IrcServer.hpp>
 //TODO implement atoi
 int atoi(char const *);
 
@@ -27,6 +28,6 @@ int main(int argc, char **argv)
     check_input(argc, argv);
     int port = atoi(argv[1]);
 	ft_irc::Console::log("Init server, port - ", port, ft_irc::Console::GENERAL);
-	ft_irc::Server serv(port, argv[2]);
+	ft_irc::IrcServer serv(port, argv[2]);
     serv.run();
 }

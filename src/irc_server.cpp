@@ -31,6 +31,8 @@ void skip_line(char const*& str) {
 	for (;*str && *str != '\n';++str);
 }
 
+IrcServer::IrcServer(int port, const char *str):Server(port, str){}
+
 const char *const IrcServer::commands[46] = {
 		"ADMIN", "AWAY", "CONNECT", "DIE", "ERROR", "INFO", "INVITE", "ISON"
 			, "JOIN", "KICK", "KILL", "LINKS", "LIST", "LUSER", "MODE", "MOTD"
@@ -351,6 +353,13 @@ void IrcServer::terminateConnection(fd_t fd) {
 	Server::terminateConnection(fd);
 	m_users.erase(m_currentUser);
 	m_currentUser = m_users.end();
+}
+
+void IrcServer::run() {
+	while (1) {
+		Server::getMessage();
+		usleep(300000);
+	}
 }
 
 IrcServer::user_type& IrcServer::currentUser() {

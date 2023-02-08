@@ -51,7 +51,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 	Console::log("updated: ", m_dt, Console::DEBUG);
 	out.clear();
 	{
-		int pull_return = poll(fds + m_sock * 2 + 2, m_connections.size() * 2, 1);
+		int pull_return = poll(fds + m_sock * 2 + 1, m_connections.size() * 2, 1);
 		if (pull_return < 0) {
 			Console::log("Pull returned error, but im not sure what does this mean", Console::GENERAL);
 			Console::log(strerror(errno), Console::GENERAL);

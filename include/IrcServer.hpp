@@ -34,6 +34,8 @@ class IrcServer : public Server {
 	typedef Command command_type;
 	typedef Server::message_type message_type;
 
+	IrcServer(int port, const char* password);
+
 	bool admin(const char*& arguments);
 	bool away(const char*& arguments);
 	bool connect(const char*& arguments);
@@ -85,6 +87,7 @@ class IrcServer : public Server {
 	void handleCommand(const char *message);
 	void terminateConnection();
 	void terminateConnection(fd_t fd);
+	void run();
 
 	static const char *const commands[46];
 	static const command_function_type command_functions[46];
