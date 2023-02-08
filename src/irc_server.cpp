@@ -1,16 +1,11 @@
 #include <IrcServer.hpp>
-#include <Spaceship.hpp>
+#include <IrcReplies.hpp>
 
 namespace ft_irc {
 
 static inline
-void skip_all_space(const char*& str) {
-	for (;std::isspace(*str); ++str);
-}
-
-static inline
 void skip_space(const char*& str) {
-	for (;*str != '\n' && std::isspace(*str); ++str);
+	for (;' ' == *str; ++str);
 }
 
 static inline
@@ -31,7 +26,8 @@ void skip_line(char const*& str) {
 	for (;*str && *str != '\n';++str);
 }
 
-IrcServer::IrcServer(int port, const char *str):Server(port, str){}
+IrcServer::IrcServer(int port, const char *str)
+	: Server(port, str){}
 
 const char *const IrcServer::commands[46] = {
 		"ADMIN", "AWAY", "CONNECT", "DIE", "ERROR", "INFO", "INVITE", "ISON"
@@ -262,7 +258,18 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 //USER <username> <hostname> <servername> <realname> (RFC 1459)
 //<user> <mode> <unused> <realname> ( RFC 2812)
 	bool IrcServer::user(const char*& arguments) {
-		(void)arguments;
+		const char *end;
+		obtain_word(arguments, end);
+		currentUser().username.append(arguments, end);
+		obtain_word(arguments, end);
+		currentUser().hostname.append(arguments, end);
+		obtain_word(arguments, end);
+		currentUser().servername.append(arguments, end);
+		obtain_word(arguments, end);
+		if (*arguments == ':')
+			skip_line(end);
+		currentUser().realname.append(arguments, end);
+		arguments = end;
 		return true;
 	}
 //USERHOST <nickname> [<nickname> <nickname> ...]
@@ -310,7 +317,8 @@ int strcmp_spacecheck(const char* lhs, const char* rhs) {
 }
 
 void IrcServer::handleCommand(const char *message) {
-	skip_all_space(message);
+	if (':' == *message)
+		++message;
 	while (*message) {
 		char const* const* l = commands;
 		char const* const* m = commands + sizeof commands / sizeof *commands / 2;
@@ -355,15 +363,84 @@ void IrcServer::terminateConnection(fd_t fd) {
 	m_currentUser = m_users.end();
 }
 
+void IrcServer::setCurrent(const message_type& message) {
+	m_currentUser = m_users.find(message.fd);
+	if (m_currentUser == m_users.end()) {
+		m_currentUser =
+			m_users.insert(std::pair<fd_t, user_type>(message.fd, user_type()))
+			.first;
+	}
+	m_currentFd = message.fd;
+}
+
 void IrcServer::run() {
-	while (1) {
-		Server::getMessage();
+	for (;;) {
+		typedef std::vector<message_type>::const_iterator iterator;
+		const std::vector<message_type>& messages = Server::getMessage();
+		for (iterator it = messages.begin(), end = messages.end()
+				; it != end; ++it) {
+			switch (it->event) {
+				break; case DISCONNECTED:
+					m_users.erase(it->fd);
+				break; case MESSAGE_RECIEVED:
+					setCurrent(*it);
+					handleCommand(it->message);
+				break; case SERVER_TERMINATED:
+					return;
+			}
+		}
 		usleep(300000);
 	}
 }
 
 IrcServer::user_type& IrcServer::currentUser() {
 	return m_currentUser->second;
+}
+
+void IrcServer::appendMessage(const char *message, size_t size) {
+		std::copy(message, message + size, m_message_it);
+		m_message_it += size;
+}
+
+void IrcServer::appendMessage(const std::string& message) {
+		std::copy(message.begin(), message.end(), m_message_it);
+		m_message_it += message.size();
+}
+void IrcServer::emptyMessage() {
+	m_message_it = m_message_buffer;
+	*m_message_it = 0;
+}
+
+void IrcServer::sendMessage() {
+	Server::sendMessage(m_currentFd, m_message_buffer);
+}
+
+void IrcServer::sendMessage(fd_t fd) {
+	Server::sendMessage(fd, m_message_buffer);
+}
+
+void IrcServer::appendMessageSelf() {
+	appendMessage("42irc_serv");
+}
+
+void IrcServer::appendMessage(const user_type& user) {
+	appendMessage(":");
+	if (user.nickname.size())
+		appendMessage(user.nickname);
+	else
+		appendMessage("*");
+	if (user.username.size()) {
+		appendMessage("!");
+		appendMessage(user.username);
+	}
+	if (user.hostname.size()) {
+		appendMessage("@");
+		appendMessage(user.username);
+	}
+}
+
+void IrcServer::endMessage() {
+	appendMessage("\n");
 }
 
 }

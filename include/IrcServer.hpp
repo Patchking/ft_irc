@@ -87,16 +87,38 @@ class IrcServer : public Server {
 	void handleCommand(const char *message);
 	void terminateConnection();
 	void terminateConnection(fd_t fd);
+	void setCurrent(const message_type& message);
 	void run();
 
 	static const char *const commands[46];
 	static const command_function_type command_functions[46];
 	private:
 	user_type& currentUser();
+
+	template<size_t SIZE>
+	inline
+	void appendMessage(const char (&message)[SIZE]) {
+		std::copy(message, message + SIZE, m_message_it);
+		m_message_it += SIZE;
+	}
+
+	void appendMessage(const char *message, size_t size);
+	void appendMessage(const std::string& message);
+
+	void emptyMessage();
+	void sendMessage();
+	void sendMessage(fd_t);
+	void messageFrom();
+	void messageFrom(const user_type& user);
+	void appendMessage(const user_type& user);
+	void appendMessageSelf();
+	void endMessage();
 	private:
 	users_type m_users;
 	users_type::iterator m_currentUser;
 	fd_t m_currentFd;
+	char m_message_buffer[512];
+	char *m_message_it;
 };
 
 }//namespace ft_irc
