@@ -111,7 +111,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 			Console::log("User #", it->first, " sends message");
 			Console::log(it->second.readbuffer, Console::LOG);
 			out.push_back(message_type(MESSAGE_RECIEVED,
-						it->first, it->second.readbuffer.c_str()));
+						it->first, it->second.readbuffer));
 			//it->second.readbuffer.erase();
 		}
 
