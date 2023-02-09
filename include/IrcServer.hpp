@@ -72,7 +72,7 @@ class IrcServer : public Server {
 	bool whowas(const char*& arguments);
 
 	public:
-	void handleCommand(const char *message);
+	void handleCommand(const std::string& message_string);
 	void terminateConnection();
 	void terminateConnection(fd_t fd);
 	void setCurrent(const message_type& message);

@@ -374,7 +374,8 @@ int strcmp_spacecheck(const char* lhs, const char* rhs) {
 	return *lhs - *rhs;
 }
 
-void IrcServer::handleCommand(const char *message) {
+void IrcServer::handleCommand(const std::string& message_string) {
+	const char *message = message_string.c_str();
 	Console::log("handle command [", message, "]");
 	while (*message) {
 		char const* const* l = commands;
@@ -451,6 +452,7 @@ void IrcServer::run() {
 				break; case SERVER_TERMINATED:
 					return;
 			}
+			it->message.clear();
 		}
 		usleep(700000);
 	}
