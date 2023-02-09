@@ -1,13 +1,13 @@
 #pragma once
 
 #include "Server.hpp"
+#include "IrcUsers.hpp"
 #include <vector>
 
 namespace ft_irc {
 
-
 class IrcServer : public Server {
-	public:
+	public:/*
 	enum Command {
 		ADMIN, AWAY, CONNECT, DIE, ERROR, INFO, INVITE, ISON
 			, JOIN, KICK, KILL, LINKS, LIST, LUSER, MODE, MOTD
@@ -16,22 +16,10 @@ class IrcServer : public Server {
 			, SERVER, SQUERY, SQUIT, STATS, SUMMON, TIME
 			, TOPIC, TRACE, USER, USERHOST, USERS, VERSION, WALLOPS
 			, WHO, WHOIS, WHOWAS
-	};
-	struct user_type {
-		std::string username;
-		std::string hostname;
-		std::string servername;
-		std::string realname;
-		std::string password;
-		std::string nickname;
-		enum Mode {
-			REG, OP
-		} mode;
-	};
+	};*/
 
-	typedef std::map<fd_t, user_type> users_type;
 	typedef bool (IrcServer::*const command_function_type)(const char*&);
-	typedef Command command_type;
+	//typedef Command command_type;
 	typedef Server::message_type message_type;
 
 	IrcServer(int port, const char* password);
@@ -93,32 +81,26 @@ class IrcServer : public Server {
 	static const char *const commands[46];
 	static const command_function_type command_functions[46];
 	private:
-	user_type& currentUser();
+	User& currentUser();
 
-	template<size_t SIZE>
-	inline
-	void appendMessage(const char (&message)[SIZE]) {
-		std::copy(message, message + SIZE, m_message_it);
-		m_message_it += SIZE;
-	}
-
-	void appendMessage(const char *message, size_t size);
+	void appendMessage(const char *message);
 	void appendMessage(const std::string& message);
 
 	void emptyMessage();
 	void sendMessage();
 	void sendMessage(fd_t);
-	void messageFrom();
-	void messageFrom(const user_type& user);
-	void appendMessage(const user_type& user);
+	void messageFrom(const User& user);
+	void appendMessage(const User& user);
 	void appendMessageSelf();
 	void endMessage();
+
+	void greet();
+	void errorAlreadyRegistered();
 	private:
-	users_type m_users;
-	users_type::iterator m_currentUser;
+	IrcUsers m_users;
+	std::string m_Nick;
+	std::string m_message;
 	fd_t m_currentFd;
-	char m_message_buffer[512];
-	char *m_message_it;
 };
 
 }//namespace ft_irc

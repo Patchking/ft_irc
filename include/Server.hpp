@@ -8,9 +8,10 @@
 #include <unistd.h>
 #include <errno.h>
 #include <poll.h>
+#include <sys/socket.h>
 #include "Console.hpp"
 #include "main.hpp"
-#include "User.hpp"
+#include "Networking.hpp"
 
 namespace ft_irc {
 

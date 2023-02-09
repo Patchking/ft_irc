@@ -112,12 +112,13 @@ const std::vector<Server::message_type>& Server::getMessage() {
 			Console::log(it->second.readbuffer, Console::LOG);
 			out.push_back(message_type(MESSAGE_RECIEVED,
 						it->first, it->second.readbuffer.c_str()));
-			it->second.readbuffer.erase();
+			//it->second.readbuffer.erase();
 		}
 
 		// Переместил отправка сообщений в цикл вместе с примом сообещний
 		if (!it->second.writebuffer.empty() && fds[it->first * 2 + 1].revents & POLLOUT) {
 			fds[it->first * 2 + 1].revents = 0;
+			Console::log("send message: ", it->second.writebuffer);
 			int send_result = send(it->first, it->second.writebuffer.c_str()
 					, it->second.writebuffer.size(), 0);
 			if (send_result < 0) {
