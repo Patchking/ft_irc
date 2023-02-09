@@ -96,7 +96,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 				case USER_DISCONNECTED:
 					Console::log("User ", it->first, " disconnected", Console::LOG);
 					out.push_back(message_type(DISCONNECTED,
-										it->first, NULL));
+										it->first, it->second.readbuffer));
 					m_connections.erase(it++);
 					continue ;
 				break; case ERR_OCCURED:
