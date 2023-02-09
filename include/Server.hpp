@@ -61,8 +61,10 @@ public:
     int getSockFd() { return m_sock; }
 private:
 	void addRecordToFds(int fd);
+	bool isFdWriteable(int fd);
+	bool isFdReadable(int fd);
 	std::vector<struct message_type> out;
-	struct pollfd fds[MAX_CONNECTION * 2];
+	struct pollfd fds[MAX_CONNECTION * 2 + 10];
     int m_dt;
     int m_sock;
     const int port;
