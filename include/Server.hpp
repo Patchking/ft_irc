@@ -31,14 +31,12 @@ public:
 		, SERVER_TERMINATED//idk
 	};
 	struct message_type {
-		message_type(event_type event_, fd_t fd_, const char *message_) {
-			event = event_;
-			fd = fd_;
-			message = message_;
-		}
+		message_type(event_type event_, fd_t fd_, std::string &message_) : event(event_),
+																			fd(fd_), 
+																			message(message_) {}
 		event_type event;
 		fd_t fd;
-		const char *message;//may be of other string type
+		std::string &message;//may be of other string type
 	};
 	typedef std::map<fd_t, connection_type> connections_type;
 public:
