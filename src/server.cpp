@@ -51,7 +51,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 	Console::log("updated: ", m_dt, Console::DEBUG);
 	out.clear();
 	{
-		int pull_return = poll(fds + m_sock * 2 + 1, m_connections.size() * 2, 1);
+		int pull_return = poll(fds + m_sock + 1, m_connections.size() * 2, 1);
 		if (pull_return < 0) {
 			Console::log("Pull returned error, but im not sure what does this mean", Console::GENERAL);
 			Console::log(strerror(errno), Console::GENERAL);
@@ -83,8 +83,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 	// В случае успешного чтения передает управление логике
 	// , в случае разрыва соединения удалет информацию о соединении.
 	for (connections_type::iterator it = m_connections.begin(); it != m_connections.end();) {
-		if (fds[it->first * 2].revents & POLLIN) {
-			fds[it->first * 2].revents = 0;
+		if (isFdReadable(it->first)) {
 			char buffer[BUFFER_LEN];
 			buffer[0] = '\0';
 			ssize_t result = recv(it->first, buffer, BUFFER_LEN - 1, 0);
@@ -97,7 +96,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 					Console::log("User ", it->first, " disconnected", Console::LOG);
 					out.push_back(message_type(DISCONNECTED,
 										it->first, it->second.readbuffer));
-					m_connections.erase(it++);
+					terminateConnection((it++)->first);
 					continue ;
 				break; case ERR_OCCURED:
 					Console::log("recv() error", Console::GENERAL);
@@ -116,8 +115,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 		}
 
 		// Переместил отправка сообщений в цикл вместе с примом сообещний
-		if (!it->second.writebuffer.empty() && fds[it->first * 2 + 1].revents & POLLOUT) {
-			fds[it->first * 2 + 1].revents = 0;
+		if (!it->second.writebuffer.empty() && isFdWriteable(it->first)) {
 			Console::log("send message: ", it->second.writebuffer);
 			int send_result = send(it->first, it->second.writebuffer.c_str()
 					, it->second.writebuffer.size(), 0);
@@ -155,16 +153,37 @@ void Server::addRecordToFds(int fd)
 		Console::log("Out of fd on server", Console::GENERAL);
 		abort();
 	}
-	fds[fd * 2].fd = fd;
-	fds[fd * 2].events = POLLIN;
-	fds[fd * 2].revents = 0;
-	fds[fd * 2 + 1].fd = fd;
-	fds[fd * 2 + 1].events = POLLOUT;
-	fds[fd * 2 + 1].revents = 0;
+	fds[fd].fd = fd;
+	fds[fd].events = POLLIN;
+	fds[fd].revents = 0;
+	fds[fd + MAX_CONNECTION].fd = fd;
+	fds[fd + MAX_CONNECTION].events = POLLOUT;
+	fds[fd + MAX_CONNECTION].revents = 0;
+}
+
+bool Server::isFdWriteable(int fd)
+{
+	if (!(fds[fd + MAX_CONNECTION].revents & POLLOUT))
+		return false;
+	fds[fd + MAX_CONNECTION].revents = 0;
+    return true;
+}
+
+bool Server::isFdReadable(int fd)
+{
+	if (!(fds[fd].revents & POLLIN))
+		return false;
+	fds[fd].revents = 0;
+    return true;
 }
 
 void Server::terminateConnection(fd_t fd)
 {
+	if (m_connections.find(fd) == m_connections.end()) {
+		Console::log("No such user: ", fd, Console::GENERAL);
+		return ;
+	}
+	close(fd);
 	m_connections.erase(fd);
 }
 
