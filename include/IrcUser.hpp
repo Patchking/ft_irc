@@ -1,7 +1,10 @@
 #pragma once
 #include <string>
+#include <ostream>
+
 namespace ft_irc {
 	struct User {
+		User():mode(DISCONNECTED){}
 		std::string username;
 		std::string hostname;
 		std::string servername;
@@ -13,3 +16,9 @@ namespace ft_irc {
 		} mode;
 	};
 }
+
+//class std::ostream;
+
+std::ostream& operator <<(std::ostream& stream, const ft_irc::User::Mode mode);
+
+std::ostream& operator <<(std::ostream& stream, const ft_irc::User& user);

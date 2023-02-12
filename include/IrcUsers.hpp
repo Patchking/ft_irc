@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <string>
+
 namespace ft_irc {
 enum ID_ENUM{ID};
 enum USERNAME_ENUM{USERNAME};
@@ -16,6 +17,7 @@ enum MODE_ENUM{MODE};
 class IrcUsers {
 	public:
 		class PipelineUser;
+
 		template<class T>
 		class PipelineUserAssign {
 			public:
@@ -28,6 +30,7 @@ class IrcUsers {
 			PipelineUser& user;
 			T& a;
 		};
+
 		class PipelineUser {
 			public:
 			typedef void(IrcUsers::*callback_type)(PipelineUser&);
@@ -38,7 +41,6 @@ class IrcUsers {
 				, user(user)
 				, callback(callback)
 				, id(id){
-				user.mode = User::REGULAR;
 			};
 			PipelineUserAssign<int> operator [] (ID_ENUM) {
 				return PipelineUserAssign<int>(*this, id);
@@ -74,6 +76,7 @@ class IrcUsers {
 			callback_type callback;
 			int id;
 		};
+
 		enum {
 			SUCCESS = 0
 			, NICK_ALREADY_USED = 0x1
@@ -81,6 +84,7 @@ class IrcUsers {
 			, ID_NOT_USED = 0x4
 			, NOT_FULL_DATA = 0x8
 		};
+
 		struct user_id_pair {
 			user_id_pair():user(NULL), id(-1){}
 			user_id_pair(User& userp, int id):user(&userp), id(id){}
@@ -95,16 +99,22 @@ class IrcUsers {
 			User* user;
 			int id;
 		};
+
 	public:
 		typedef std::map<std::string, user_id_pair> users_map_type;
 		typedef std::vector<User> container_type;
+
 	public:
 		void unlog(int id) {
-			ensureUsersSize(id);
-			if (id < 0)
+			if (id < 0 || m_users.size() <= static_cast<size_t>(id))
 				return;
-			clearUser(m_users[id]);
+			User& user = m_users[id];
+			users_map_type::iterator iterator = m_usersMap.find(user.nickname);
+			if (iterator != m_usersMap.end())
+				m_usersMap.erase(iterator);
+			clearUser(user);
 		}
+
 		PipelineUser changeUser(int id) {
 			ensureUsersSize(id);
 			m_tempid = id;/*
@@ -112,7 +122,8 @@ class IrcUsers {
 				m_logStatus = ID_NOT_USED;
 				return PipelineUser(*this, m_TempUser, &IrcUsers::ignore);
 			}*/
-			User& user = m_users[id];/*
+			User& user = m_users[id];
+			/*
 			if (User::DISCONNECTED == user.mode) {
 				m_logStatus = ID_NOT_USED;
 				return PipelineUser(*this, m_TempUser, &IrcUsers::ignore);
@@ -120,13 +131,15 @@ class IrcUsers {
 			m_TempUser.nickname = user.nickname;
 			return PipelineUser(*this, user, &IrcUsers::changeUserApply, id);
 		}
+
 		PipelineUser logUser() {
-			clearUser(m_TempUser);
 			return PipelineUser(*this, m_TempUser, &IrcUsers::apply);
 		}
+
 		int logStatus() {
 			return m_logStatus;
 		}
+
 		int find(const std::string& nick) const {
 			users_map_type::const_iterator iterator = m_usersMap.find(nick);
 			if (m_usersMap.end() == iterator) {
@@ -134,31 +147,46 @@ class IrcUsers {
 			}
 			return iterator->second.id;
 		}
+
 		User& operator[](int id) {
 			ensureUsersSize(id);
 			return m_users[id];
 		}
+
 		const User& operator[](int id) const {
 			return m_users.at(id);
 		}
+
 		const User& getTemp() const {
 			return m_TempUser;
 		}
+
 		bool connected(int id) const {
 			if (id < 0)
 				return false;
 			if (static_cast<size_t>(id) > m_users.size())
 				return false;
-			return m_users[id].mode == User::DISCONNECTED;
+			return m_users[id].mode != User::DISCONNECTED;
 		}
+
+		void online(int id) {
+			ensureUsersSize(id);
+			m_users[id].mode = User::REGULAR;
+		}
+
+		void offline(int id) {
+			ensureUsersSize(id);
+			m_users[id].mode = User::DISCONNECTED;
+		}
+
 	private:
 		void ignore(PipelineUser& pipeling) {
 			(void)pipeling;
 		}
+
 		void changeUserApply(PipelineUser& pipeling) {
 			m_logStatus = SUCCESS;
 			if (pipeling.id != m_tempid) {
-				std::cout << "hi9\n";
 				pipeling.id = m_tempid;
 				ensureUsersSize(pipeling.id);
 				if (m_users[pipeling.id].mode != User::DISCONNECTED)
@@ -178,22 +206,25 @@ class IrcUsers {
 				}
 			}
 		}
+
 		void apply(PipelineUser& pipeling) {
 			if (-1 < find(pipeling.user.nickname)) {
 				m_logStatus = NICK_ALREADY_USED;
 				return;
 			}
 			ensureUsersSize(pipeling.id);
-			if (m_users[pipeling.id].mode != User::DISCONNECTED) {
+			User& user = m_users[pipeling.id];
+			ensureUsersSize(pipeling.id);
+			if (user.mode != User::DISCONNECTED) {
 				m_logStatus = ID_ALREADY_USED;
 				return;
 			}
-			User& user = m_users[pipeling.id];
 			copyNonEmpty(user, m_TempUser);
 			m_usersMap[pipeling.user.nickname]
 				= user_id_pair(user, pipeling.id);
 			m_logStatus = SUCCESS;
 		}
+
 		void ensureUsersSize(int size) {
 			if (size < 0)
 				return;
@@ -205,6 +236,7 @@ class IrcUsers {
 				m_users.resize(new_size);
 			}
 		}
+
 		static void copyNonEmpty(User& dest, User& src) {
 			if (src.nickname.size())
 				dest.nickname = src.nickname;
@@ -218,14 +250,17 @@ class IrcUsers {
 				dest.realname = src.realname;
 			dest.mode = src.mode;
 		}
+
 		static void clearUser(User& user) {
 			user.nickname.clear();
 			user.hostname.clear();
 			user.servername.clear();
 			user.username.clear();
 			user.realname.clear();
+			user.password.clear();
 			user.mode = User::DISCONNECTED;
 		}
+
 	private:
 		friend class IrcUsers::PipelineUser;
 		container_type m_users;
