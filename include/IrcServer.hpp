@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Server.hpp"
 #include "IrcUsers.hpp"
+#include "Server.hpp"
 #include <vector>
 
 #define IRC_SERVER_NAME "42irc_serv"
@@ -99,6 +99,7 @@ class IrcServer : public Server {
 
 	void greet();
 	void errorAlreadyRegistered();
+	bool registerUser();
 	private:
 	IrcUsers m_users;
 	std::string m_message;
