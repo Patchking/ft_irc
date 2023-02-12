@@ -6,7 +6,7 @@
 #    By: jzoltan <jzoltan@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/02/03 04:30:43 by jzoltan           #+#    #+#              #
-#    Updated: 2023/02/07 17:56:00 by jzoltan          ###   ########.fr        #
+#    Updated: 2023/02/12 21:16:03 by jzoltan          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 #*
@@ -47,8 +47,8 @@ HEADER_EXT              =.hpp
 DFILES_EXT              =.cpp.d
 CC                      =c++
 ARCHIVE                 =ar rc
-CFLAG                   =-Wextra -Wall -Werror -pedantic -Ofast -std=c++98
-DEBUG_FLAG              =-g3 -Wextra -Wall -Werror
+CFLAG                   =-Wextra -Wall -Werror -pedantic -Ofast -std=c++98# -fsanitize=address
+DEBUG_FLAG              =-g3 -Wextra -Wall -Werror# -fsanitize=address
 DFLAG                   =-MT $@ -MD -MP -MF $(DFILES_DIR)/$*$(DFILES_EXT)
 CLINK                   =
 DEPENDENCIES_PATHS      =
@@ -69,7 +69,7 @@ DEPENDENCIES    =Dependencies
 #*
 
 SOURCES         = \
-	main.cpp server.cpp console.cpp irc_server.cpp
+	main.cpp server.cpp console.cpp irc_server.cpp irc_user.cpp
 
 BONUS_SOURCES   =
 

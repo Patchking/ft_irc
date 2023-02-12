@@ -1,6 +1,6 @@
+#include <IrcServer.hpp>
 #include "main.hpp"
 #include <Abort.hpp>
-#include <IrcServer.hpp>
 //TODO implement atoi
 int atoi(char const *);
 

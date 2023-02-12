@@ -4,13 +4,58 @@
 namespace ft_irc {
 
 static inline
+int strcmp_spacecheck(const char* lhs, const char* rhs) {
+	while (*lhs == *rhs)
+		++lhs, ++rhs;
+	if (*lhs < 33 && *rhs < 33)
+		return 0;
+	return *lhs - *rhs;
+}
+
+static inline
+std::ptrdiff_t binary_search(const char*const* commands
+		, size_t size
+		, const char* message) {
+	char const* const* l = commands;
+	char const* const* m = commands + size / 2;
+	char const* const* r = commands + size;
+	while (l + 1 != r) {
+		const int cmp = strcmp_spacecheck(message, *m);
+		if (cmp < 0) {
+			r = m;
+			m -= (m - l + 1) >> 1;
+		}
+		else if (cmp > 0) {
+			l = m;
+			m += (r - m) >> 1;
+		}
+		else {
+			return m - commands;
+		}
+	}
+	if (!strcmp_spacecheck(message, *m))
+		return m - commands;
+	return -1;
+}
+
+static inline
 void skip_space(const char*& str) {
 	for (;' ' == *str; ++str);
 }
 
 static inline
 void skip_nonspace(const char*& str) {
-	for (;*str && *str != ' ' && *str != '\n'; ++str);
+	for (;; ++str) {
+		switch(*str) {
+			case '\0':
+			case '\r':
+			case '\n':
+			case ' ':
+				return;
+			break; default:
+				;
+		}
+	}
 }
 
 static inline
@@ -22,9 +67,56 @@ bool obtain_word(const char*& begin, const char*& end) {
 }
 
 static inline
+std::string extract_argument(const char*& message) {
+	char const *end;
+	obtain_word(message, end);
+	if (message == end)
+		return "";
+	std::string ret(message, end);
+	message = end;
+	return ret;
+}
+
+static inline
 void skip_line(char const*& str) {
-	for (;*str && *str != '\n';++str);
-	while ('\n' == *str)
+	for (;;++str) {
+		switch(*str) {
+			case '\0':
+			case '\r':
+			case '\n':
+				return;
+			break; default:
+				;
+		}
+	}
+}
+
+static inline
+std::string extract_argument_colon(const char*& message) {
+	char const *end;
+	skip_space(message);
+	if (*message == ':') {
+		++message;
+		end = message;
+		skip_line(end);
+		if (message == end)
+			return "";
+		std::string ret(message, end);
+		message = end;
+		return ret;
+	}
+	obtain_word(message, end);
+	if (message == end)
+		return "";
+	std::string ret(message, end);
+	message = end;
+	return ret;
+}
+
+static inline
+void next_line(char const*& str) {
+	skip_line(str);
+	while ('\n' == *str || '\r' == *str)
 		++str;
 }
 
@@ -149,15 +241,29 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 //NICK <nickname> [<hopcount>] (RFC 1459)
 //<nickname>
 	bool IrcServer::nick(const char*& arguments) {
-		const char *end;
-		if (m_users.connected(m_currentFd)) {
-			errorAlreadyRegistered();
-			return true;
+		std::string nick = extract_argument(arguments);
+		if (nick.empty() || nick == "*") {
+			appendMessage(":");
+			appendMessageSelf();
+			appendMessage(IRC_ERR_NONICKNAMEGIVEN);
+			appendMessage(" * :No nickname parameter.\r\n");
 		}
-		skip_space(arguments);
-		end = arguments;
-		skip_nonspace(arguments);
-		m_Nick.append(arguments, end);
+		m_users.changeUser(m_currentFd)
+			[NICKNAME](nick);
+		if (m_users.logStatus() & IrcUsers::NICK_ALREADY_USED) {
+			appendMessage(":");
+			appendMessageSelf();
+			appendMessage(IRC_ERR_NICKNAMEINUSE);
+			if (m_users[m_currentFd].nickname.empty())
+				appendMessage(" * ");
+			else
+				appendMessage(m_users[m_currentFd].nickname);
+			appendMessage(" ");
+			appendMessage(nick);
+			appendMessage(" :Nickname in use.\r\n");
+		}
+		if (registerUser())
+			greet();
 		return true;
 	}
 //NOTICE <msgtarget> <message>
@@ -177,30 +283,26 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 	}
 //PASS <password>
 	bool IrcServer::pass(const char*& arguments) {
-		const char *end;
 		if (m_users.connected(m_currentFd)) {
 			errorAlreadyRegistered();
 			return true;
 		}
-		obtain_word(arguments, end);
-		if (':' == *arguments)
-			++arguments;
-		if (arguments == end) {
+		std::string password = extract_argument_colon(arguments);
+		m_users.changeUser(m_currentFd)
+			[PASSWORD](password);
+		if (password.empty()) {
 			appendMessage(":");
 			appendMessageSelf();
 			appendMessage(IRC_ERR_NEEDMOREPARAMS);
-			appendMessage(" * :Need more parameters.\n");
-			return true;
+			appendMessage(" * :Need more parameters.\r\n");
 		}
-		std::string password(arguments, end);
-		arguments = end;
-		skip_line(arguments);
-		if (Server::getPassword() != password){
+		if (Server::getPassword() != password) {
+			Console::log("password mismatch (", password, ")");
+			m_users[m_currentFd].password.clear();
 			appendMessage(":");
 			appendMessageSelf();
 			appendMessage(IRC_ERR_PASSWDMISMATCH);
-			appendMessage(" * :Password mismatch.\n");
-			return false;
+			appendMessage(" * :Password mismatch.\r\n");
 		}
 		return true;
 	}
@@ -211,11 +313,13 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 	}
 //PONG <server2> [<server2>]
 	bool IrcServer::pong(const char*& arguments) {
+
 		(void)arguments;
 		return true;
 	}
 //PRIVMSG <msgtarget> <message>
 	bool IrcServer::privmsg(const char*& arguments) {
+
 		(void)arguments;
 		return true;
 	}
@@ -288,46 +392,34 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 //USER <username> <hostname> <servername> <realname> (RFC 1459)
 //<user> <mode> <unused> <realname> (RFC 2812)
 	bool IrcServer::user(const char*& arguments) {
-		const char *end;
-		int shift;
 		bool success = true;
 		m_users.logUser()
-		[ID](( m_currentFd ))
-		[USERNAME](( obtain_word(arguments, end)
-				, std::string(arguments, end) ))
-		[HOSTNAME](( obtain_word(arguments, end)
-				, std::string(arguments, end) ))
-		[SERVERNAME](( obtain_word(arguments, end)
-				, std::string(arguments, end) ))
-		[REALNAME](( obtain_word(arguments, end)
-				, shift = (':' == *arguments ? skip_line(end), 1 : 0)
-				, std::string(arguments + shift, end) ))
-		[MODE](( User::REGULAR ));
-		arguments = end;
+		[ID](m_currentFd)
+		[USERNAME](extract_argument(arguments))
+		[HOSTNAME](extract_argument(arguments))
+		[SERVERNAME](extract_argument(arguments))
+		[REALNAME](extract_argument_colon(arguments));
 		if (m_users.getTemp().username.empty()
 			|| m_users.getTemp().hostname.empty()
 			|| m_users.getTemp().servername.empty()
-			|| m_users.getTemp().realname.empty()) {
+			|| m_users.getTemp().realname.empty()
+			) {
 			appendMessage(":");
 			appendMessageSelf();
 			appendMessage(IRC_ERR_NEEDMOREPARAMS);
-			if (m_users[m_currentFd].nickname.empty())
-				appendMessage(" * ");
-			else {
-				appendMessage(" ");
-				appendMessage(m_users[m_currentFd].nickname);
-			}
-			appendMessage(" :Need more parameters.\n");
+			appendMessageNick(m_users[m_currentFd]);
+			appendMessage(" :Need more parameters.\r\n");
 			success = false;
 		}
+		if (m_users[m_currentFd].nickname.empty()
+				|| m_users[m_currentFd].nickname == "*")
+			success = false;
 		if (m_users.logStatus() & IrcUsers::ID_ALREADY_USED) {
 			errorAlreadyRegistered();
 			success = false;
 		}
-		if (success) {
+		if (success && registerUser())
 			greet();
-			success = false;
-		}
 		return true;
 	}
 //USERHOST <nickname> [<nickname> <nickname> ...]
@@ -365,59 +457,27 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 		return true;
 	}
 
-static inline
-int strcmp_spacecheck(const char* lhs, const char* rhs) {
-	while (*lhs == *rhs)
-		++lhs, ++rhs;
-	if (*lhs < 33 && *rhs < 33)
-		return 0;
-	return *lhs - *rhs;
-}
-
-void IrcServer::handleCommand(const std::string& message_string) {
+bool IrcServer::handleCommand(const std::string& message_string) {
 	const char *message = message_string.c_str();
-	Console::log("handle command [", message, "]");
+	Console::log("handle command ", message);
 	while (*message) {
-		char const* const* l = commands;
-		char const* const* m = commands + sizeof commands / sizeof *commands / 2;
-		char const* const* r = commands + sizeof commands / sizeof *commands;
-		bool found = false;
-		while (l + 1 != r) {
-			const int cmp = strcmp_spacecheck(message, *m);
-			if (cmp < 0) {
-				r = m;
-				m -= (m - l + 1) >> 1;
-			}
-			else if (cmp > 0) {
-				l = m;
-				m += (r - m) >> 1;
-			}
-			else {
-				found = true;
-				break;
-			}
-		}
-		if (!found) {
-			found = !strcmp_spacecheck(message, *m);
-		}
-		if (found) {
-			int command_id = m - commands;
-			Console::log("command ", *m, " id: ", command_id);
+		std::ptrdiff_t cid = binary_search(commands, 46, message);
+		if (-1 != cid) {
+			Console::log("command ", commands[cid], " id: ", cid);
 			skip_nonspace(message);
-			if (!(this->*command_functions[command_id])(message)) {
-				Console::log("command finished");
+			if (!(this->*command_functions[cid])(message)) {
 				sendMessage();
-				terminateConnection();
-				return;
+				return false;
 			}
-			Console::log("command finished");
+			next_line(message);
 			sendMessage();
 		}
 		else {
+			next_line(message);
 			Console::log("invalid command ", message);
-			skip_line(message);
 		}
 	}
+	return true;
 }
 
 inline
@@ -426,6 +486,7 @@ void IrcServer::terminateConnection() {
 }
 inline
 void IrcServer::terminateConnection(fd_t fd) {
+	Console::log("Disconnected ", m_users[fd], Console::LOG);
 	Server::terminateConnection(fd);
 	m_users.unlog(fd);
 }
@@ -438,21 +499,23 @@ void IrcServer::run() {
 	for (;;) {
 		typedef std::vector<message_type>::const_iterator iterator;
 		const std::vector<message_type>& messages = Server::getMessage();
-		Console::log("messages recieved: ", messages.size());
+		if (messages.size())
+			Console::log("messages recieved: ", messages.size(), Console::LOG);
 		for (iterator it = messages.begin(), end = messages.end()
 				; it != end; ++it) {
 			switch (it->event) {
 				break; case DISCONNECTED:
-					Console::log("disconnected event recieved #", it->fd);
+					Console::log("Disconnected: ", m_users[it->fd], Console::LOG);
 					m_users.unlog(it->fd);
 				break; case MESSAGE_RECIEVED:
-					Console::log("message event recieved #", it->fd);
 					setCurrent(*it);
-					handleCommand(it->message);
+					if (handleCommand(it->message))
+						it->message.clear();
+					else
+						terminateConnection();
 				break; case SERVER_TERMINATED:
 					return;
 			}
-			it->message.clear();
 		}
 		usleep(700000);
 	}
@@ -470,19 +533,32 @@ void IrcServer::emptyMessage() {
 }
 
 void IrcServer::sendMessage() {
-	Console::log("in send[", m_currentFd, "] {\n", m_message, "}");
+	if (m_message.empty())
+		return;
+	Console::log("in send[", m_currentFd, "] {\n\t", m_message, "}", Console::ALL);
 	Server::sendMessage(m_currentFd, m_message.c_str());
-	Console::log("in send");
 	emptyMessage();
 }
 
 void IrcServer::sendMessage(fd_t fd) {
+	if (m_message.empty())
+		return;
+	Console::log("in send[", fd, "] {\n\t", m_message, "}", Console::ALL);
 	Server::sendMessage(fd, m_message.c_str());
 	emptyMessage();
 }
 
 void IrcServer::appendMessageSelf() {
-	appendMessage("42irc_serv");
+	appendMessage(IRC_SERVER_NAME);
+}
+
+void IrcServer::appendMessageNick(const User& user) {
+	if (user.nickname.empty())
+		appendMessage(" *");
+	else {
+		appendMessage(" ");
+		appendMessage(user.nickname);
+	}
 }
 
 void IrcServer::appendMessage(const User& user) {
@@ -496,7 +572,7 @@ void IrcServer::appendMessage(const User& user) {
 	}
 	if (user.hostname.size()) {
 		appendMessage("@");
-		appendMessage(user.username);
+		appendMessage(user.hostname);
 	}
 }
 
@@ -508,18 +584,29 @@ void IrcServer::greet() {
 	appendMessage(":");
 	appendMessageSelf();
 	appendMessage(IRC_RPL_WELCOME);
-	appendMessage(" ");
-	appendMessage(m_users[m_currentFd].nickname);
-	appendMessage(" :Welcome and some other crap.\n");
+	appendMessageNick(m_users[m_currentFd]);
+	appendMessage(" :Welcome and some other crap.\r\n");
 }
 
 void IrcServer::errorAlreadyRegistered() {
 	appendMessage(":");
 	appendMessageSelf();
 	appendMessage(IRC_ERR_ALREADYREGISTRED);
-	appendMessage(" * ");
-	appendMessage(m_users[m_currentFd].nickname);
-	appendMessage(" :Connection already registered.\n");
+	appendMessageNick(m_users[m_currentFd]);
+	appendMessage(" :Connection already registered.\r\n");
+}
+
+bool IrcServer::registerUser() {
+	User& user = m_users[m_currentFd];
+	if (user.nickname.empty()
+	|| user.username.empty()
+	|| user.hostname.empty()
+	|| user.servername.empty()
+	|| user.realname.empty()
+	|| user.password.empty())
+		return false;
+	user.mode = User::REGULAR;
+	return true;
 }
 
 }

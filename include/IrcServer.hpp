@@ -1,8 +1,10 @@
 #pragma once
 
-#include "Server.hpp"
 #include "IrcUsers.hpp"
+#include "Server.hpp"
 #include <vector>
+
+#define IRC_SERVER_NAME "42irc_serv"
 
 namespace ft_irc {
 
@@ -72,7 +74,7 @@ class IrcServer : public Server {
 	bool whowas(const char*& arguments);
 
 	public:
-	void handleCommand(const std::string& message_string);
+	bool handleCommand(const std::string& message_string);
 	void terminateConnection();
 	void terminateConnection(fd_t fd);
 	void setCurrent(const message_type& message);
@@ -92,13 +94,14 @@ class IrcServer : public Server {
 	void messageFrom(const User& user);
 	void appendMessage(const User& user);
 	void appendMessageSelf();
+	void appendMessageNick(const User&);
 	void endMessage();
 
 	void greet();
 	void errorAlreadyRegistered();
+	bool registerUser();
 	private:
 	IrcUsers m_users;
-	std::string m_Nick;
 	std::string m_message;
 	fd_t m_currentFd;
 };
