@@ -116,7 +116,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 		}
 
 		// Переместил отправка сообщений в цикл вместе с примом сообещний
-		if (!it->second.writebuffer.empty() && isFdWriteable(it->first)) {
+		if (!it->second.writebuffer.empty()) {
 			Console::log("send message: ", it->second.writebuffer);
 			int send_result = send(it->first, it->second.writebuffer.c_str()
 					, it->second.writebuffer.size(), 0);
