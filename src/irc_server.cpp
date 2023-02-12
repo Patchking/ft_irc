@@ -242,7 +242,6 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 //<nickname>
 	bool IrcServer::nick(const char*& arguments) {
 		std::string nick = extract_argument(arguments);
-		Console::log(m_users[m_currentFd]);
 		if (nick.empty() || nick == "*") {
 			appendMessage(":");
 			appendMessageSelf();
@@ -251,7 +250,6 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 		}
 		m_users.changeUser(m_currentFd)
 			[NICKNAME](nick);
-		Console::log(m_users[m_currentFd]);
 		if (m_users.logStatus() & IrcUsers::NICK_ALREADY_USED) {
 			appendMessage(":");
 			appendMessageSelf();
@@ -290,10 +288,8 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 			return true;
 		}
 		std::string password = extract_argument_colon(arguments);
-		Console::log(m_users[m_currentFd], Console::ALL);
 		m_users.changeUser(m_currentFd)
 			[PASSWORD](password);
-		Console::log(m_users[m_currentFd], Console::ALL);
 		if (password.empty()) {
 			appendMessage(":");
 			appendMessageSelf();
@@ -396,14 +392,12 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 //<user> <mode> <unused> <realname> (RFC 2812)
 	bool IrcServer::user(const char*& arguments) {
 		bool success = true;
-		Console::log(m_users[m_currentFd]);
 		m_users.logUser()
 		[ID](m_currentFd)
 		[USERNAME](extract_argument(arguments))
 		[HOSTNAME](extract_argument(arguments))
 		[SERVERNAME](extract_argument(arguments))
 		[REALNAME](extract_argument_colon(arguments));
-		Console::log(m_users[m_currentFd]);
 		if (m_users.getTemp().username.empty()
 			|| m_users.getTemp().hostname.empty()
 			|| m_users.getTemp().servername.empty()
@@ -464,20 +458,17 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 
 bool IrcServer::handleCommand(const std::string& message_string) {
 	const char *message = message_string.c_str();
-	Console::log("handle command [", message, "]");
+	Console::log("handle command ", message);
 	while (*message) {
 		std::ptrdiff_t cid = binary_search(commands, 46, message);
-		Console::log("search");
 		if (-1 != cid) {
 			Console::log("command ", commands[cid], " id: ", cid);
 			skip_nonspace(message);
 			if (!(this->*command_functions[cid])(message)) {
-				Console::log("command finished");
 				sendMessage();
 				return false;
 			}
 			next_line(message);
-			Console::log("command finished");
 			sendMessage();
 		}
 		else {
@@ -494,10 +485,9 @@ void IrcServer::terminateConnection() {
 }
 inline
 void IrcServer::terminateConnection(fd_t fd) {
+	Console::log("Disconnected ", m_users[fd], Console::LOG);
 	Server::terminateConnection(fd);
-	Console::log("s");
 	m_users.unlog(fd);
-	Console::log("s");
 }
 
 void IrcServer::setCurrent(const message_type& message) {
@@ -508,12 +498,13 @@ void IrcServer::run() {
 	for (;;) {
 		typedef std::vector<message_type>::const_iterator iterator;
 		const std::vector<message_type>& messages = Server::getMessage();
-		Console::log("messages recieved: ", messages.size(), Console::LOG);
+		if (messages.size())
+			Console::log("messages recieved: ", messages.size(), Console::LOG);
 		for (iterator it = messages.begin(), end = messages.end()
 				; it != end; ++it) {
 			switch (it->event) {
 				break; case DISCONNECTED:
-					Console::log("disconnected event recieved #", it->fd);
+					Console::log("Disconnected: ", m_users[it->fd], Console::LOG);
 					m_users.unlog(it->fd);
 				break; case MESSAGE_RECIEVED:
 					setCurrent(*it);
@@ -541,11 +532,9 @@ void IrcServer::emptyMessage() {
 }
 
 void IrcServer::sendMessage() {
-	Console::log("in send[", m_currentFd, "] {\n", m_message, "}");
+	Console::log("in send[", m_currentFd, "] {\n\t", m_message, "}", Console::ALL);
 	Server::sendMessage(m_currentFd, m_message.c_str());
-	Console::log("in send");
 	emptyMessage();
-	Console::log("after send");
 }
 
 void IrcServer::sendMessage(fd_t fd) {

@@ -4,7 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <string>
-#include "Console.hpp"
+
 namespace ft_irc {
 enum ID_ENUM{ID};
 enum USERNAME_ENUM{USERNAME};
@@ -113,7 +113,6 @@ class IrcUsers {
 			if (iterator != m_usersMap.end())
 				m_usersMap.erase(iterator);
 			clearUser(user);
-			Console::log("disconnected: ", user);
 		}
 
 		PipelineUser changeUser(int id) {
@@ -217,7 +216,6 @@ class IrcUsers {
 			User& user = m_users[pipeling.id];
 			ensureUsersSize(pipeling.id);
 			if (user.mode != User::DISCONNECTED) {
-				Console::log("777777", Console::ALL);
 				m_logStatus = ID_ALREADY_USED;
 				return;
 			}
