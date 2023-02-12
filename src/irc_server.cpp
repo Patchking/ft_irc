@@ -319,6 +319,7 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 	}
 //PRIVMSG <msgtarget> <message>
 	bool IrcServer::privmsg(const char*& arguments) {
+
 		(void)arguments;
 		return true;
 	}
@@ -532,12 +533,17 @@ void IrcServer::emptyMessage() {
 }
 
 void IrcServer::sendMessage() {
+	if (m_message.empty())
+		return;
 	Console::log("in send[", m_currentFd, "] {\n\t", m_message, "}", Console::ALL);
 	Server::sendMessage(m_currentFd, m_message.c_str());
 	emptyMessage();
 }
 
 void IrcServer::sendMessage(fd_t fd) {
+	if (m_message.empty())
+		return;
+	Console::log("in send[", fd, "] {\n\t", m_message, "}", Console::ALL);
 	Server::sendMessage(fd, m_message.c_str());
 	emptyMessage();
 }
