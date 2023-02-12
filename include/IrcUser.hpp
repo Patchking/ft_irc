@@ -7,6 +7,7 @@ namespace ft_irc {
 		std::string servername;
 		std::string realname;
 		std::string nickname;
+		std::string password;
 		enum Mode {
 			DISCONNECTED, REGULAR, OPERATOR
 		} mode;

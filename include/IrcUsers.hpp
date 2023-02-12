@@ -11,6 +11,7 @@ enum NICKNAME_ENUM{NICKNAME};
 enum SERVERNAME_ENUM{SERVERNAME};
 enum HOSTNAME_ENUM{HOSTNAME};
 enum REALNAME_ENUM{REALNAME};
+enum PASSWORD_ENUM{PASSWORD};
 enum MODE_ENUM{MODE};
 class IrcUsers {
 	public:
@@ -31,10 +32,12 @@ class IrcUsers {
 			public:
 			typedef void(IrcUsers::*callback_type)(PipelineUser&);
 			public:
-			PipelineUser(IrcUsers& users, User& user, callback_type callback)
+			PipelineUser(IrcUsers& users, User& user, callback_type callback
+					, int id = 0)
 				: users(users)
 				, user(user)
-				, callback(callback) {
+				, callback(callback)
+				, id(id){
 				user.mode = User::REGULAR;
 			};
 			PipelineUserAssign<int> operator [] (ID_ENUM) {
@@ -55,6 +58,9 @@ class IrcUsers {
 			PipelineUserAssign<std::string> operator [] (HOSTNAME_ENUM) {
 				return PipelineUserAssign<std::string>(*this, user.hostname);
 			}
+			PipelineUserAssign<std::string> operator [] (PASSWORD_ENUM) {
+				return PipelineUserAssign<std::string>(*this, user.password);
+			}
 			PipelineUserAssign<User::Mode> operator [] (MODE_ENUM) {
 				return PipelineUserAssign<User::Mode>(*this, user.mode);
 			}
@@ -64,7 +70,7 @@ class IrcUsers {
 			private:
 			friend class IrcUsers;
 			IrcUsers& users;
-			User user;
+			User& user;
 			callback_type callback;
 			int id;
 		};
@@ -100,18 +106,19 @@ class IrcUsers {
 			clearUser(m_users[id]);
 		}
 		PipelineUser changeUser(int id) {
-			m_tempid = id;
+			ensureUsersSize(id);
+			m_tempid = id;/*
 			if (id < 0 || m_users.size() < static_cast<size_t>(id)) {
 				m_logStatus = ID_NOT_USED;
 				return PipelineUser(*this, m_TempUser, &IrcUsers::ignore);
-			}
-			User& user = m_users[id];
+			}*/
+			User& user = m_users[id];/*
 			if (User::DISCONNECTED == user.mode) {
 				m_logStatus = ID_NOT_USED;
 				return PipelineUser(*this, m_TempUser, &IrcUsers::ignore);
-			}
+			}*/
 			m_TempUser.nickname = user.nickname;
-			return PipelineUser(*this, user, &IrcUsers::changeUserApply);
+			return PipelineUser(*this, user, &IrcUsers::changeUserApply, id);
 		}
 		PipelineUser logUser() {
 			clearUser(m_TempUser);
@@ -151,6 +158,7 @@ class IrcUsers {
 		void changeUserApply(PipelineUser& pipeling) {
 			m_logStatus = SUCCESS;
 			if (pipeling.id != m_tempid) {
+				std::cout << "hi9\n";
 				pipeling.id = m_tempid;
 				ensureUsersSize(pipeling.id);
 				if (m_users[pipeling.id].mode != User::DISCONNECTED)
@@ -164,7 +172,7 @@ class IrcUsers {
 					pipeling.user.nickname = m_TempUser.nickname;
 				}
 				else {
-					m_usersMap.erase(iterator);
+					//m_usersMap.erase(iterator);
 					m_usersMap[pipeling.user.nickname]
 						= user_id_pair(m_users[pipeling.id], pipeling.id);
 				}
@@ -189,6 +197,7 @@ class IrcUsers {
 		void ensureUsersSize(int size) {
 			if (size < 0)
 				return;
+			++size;
 			if (m_users.size() < static_cast<size_t>(size)) {
 				size_t new_size = m_users.size() << 1;
 				new_size = new_size > static_cast<size_t>(size)
