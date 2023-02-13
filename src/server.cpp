@@ -98,7 +98,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 		{
 		case POLLIN: {
 			std::string &readBuffer = m_connections[curfd].readbuffer;
-			if (fds[i].revents == POLLIN) {
+			if (fds[i].revents & POLLIN) {
 				just_something_happend = true;
 				char buffer[BUFFER_LEN];
 				buffer[0] = '\0';
@@ -124,7 +124,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 				}
 			} else if (!readBuffer.empty()) {
 				Console::log("User #", curfd, " sends message");
-				Console::log(readBuffer, Console::LOG);
+				Console::log(readBuffer, Console::DEBUG);
 				out.push_back(message_type(MESSAGE_RECIEVED,
 							curfd, readBuffer));
 			}
@@ -132,7 +132,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 		}
 		case POLLOUT: {
 			std::string &writeBuffer = m_connections[curfd].writebuffer;
-			if (!writeBuffer.empty() && fds[i].revents == POLLOUT) {
+			if (!writeBuffer.empty() && fds[i].revents & POLLOUT) {
 				Console::log("send message to ", i, ": ", writeBuffer);
 				int send_result = send(curfd, writeBuffer.c_str()
 						, writeBuffer.size(), 0);
