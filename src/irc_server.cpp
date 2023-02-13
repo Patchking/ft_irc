@@ -501,12 +501,12 @@ void IrcServer::run() {
 		typedef std::vector<message_type>::const_iterator iterator;
 		const std::vector<message_type>& messages = Server::getMessage();
 		if (messages.size())
-			Console::log("messages recieved: ", messages.size(), Console::LOG);
+			Console::log("messages recieved: ", messages.size(), Console::DEBUG);
 		for (iterator it = messages.begin(), end = messages.end()
 				; it != end; ++it) {
 			switch (it->event) {
 				break; case DISCONNECTED:
-					Console::log("Disconnected: ", m_users[it->fd], Console::LOG);
+					Console::log("Disconnected: ", m_users[it->fd], Console::DEBUG);
 					m_users.unlog(it->fd);
 				break; case MESSAGE_RECIEVED:
 					setCurrent(*it);
@@ -518,7 +518,7 @@ void IrcServer::run() {
 					return;
 			}
 		}
-		usleep(700000);
+		// usleep(700000);
 	}
 }
 
