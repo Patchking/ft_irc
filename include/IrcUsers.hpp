@@ -2,8 +2,9 @@
 #include "IrcUser.hpp"
 #include <map>
 #include <vector>
-#include <iostream>
 #include <string>
+
+#include <Console.hpp>
 
 namespace ft_irc {
 enum ID_ENUM{ID};
@@ -101,18 +102,27 @@ class IrcUsers {
 		};
 
 	public:
-		typedef std::map<std::string, user_id_pair> users_map_type;
+		typedef std::map<std::string, int> users_map_type;
 		typedef std::vector<User> container_type;
 
 	public:
 		void unlog(int id) {
-			if (id < 0 || m_users.size() <= static_cast<size_t>(id))
+			if (id < 0 || m_users.size() <= static_cast<size_t>(id)) {
+				Console::log(id, Console::ALL);
 				return;
+			}
 			User& user = m_users[id];
 			users_map_type::iterator iterator = m_usersMap.find(user.nickname);
+			Console::log("map size: ", m_usersMap.size());
 			if (iterator != m_usersMap.end())
 				m_usersMap.erase(iterator);
+			if (m_usersMap.size())
+				Console::log(m_usersMap.begin()->first
+						, ":", m_usersMap.begin()->second);
+			Console::log("map size: ", m_usersMap.size());
+			Console::log("Unlogged: ", user);
 			clearUser(user);
+			Console::log("Unlogged: ", user);
 		}
 
 		PipelineUser changeUser(int id) {
@@ -133,6 +143,7 @@ class IrcUsers {
 		}
 
 		PipelineUser logUser() {
+			clearUser(m_TempUser);
 			return PipelineUser(*this, m_TempUser, &IrcUsers::apply);
 		}
 
@@ -145,7 +156,7 @@ class IrcUsers {
 			if (m_usersMap.end() == iterator) {
 				return -1;
 			}
-			return iterator->second.id;
+			return iterator->second;
 		}
 
 		User& operator[](int id) {
@@ -193,6 +204,8 @@ class IrcUsers {
 					m_logStatus |= ID_ALREADY_USED;
 			}
 			if (m_TempUser.nickname != pipeling.user.nickname) {
+				if (m_TempUser.nickname.empty())
+					return;
 				users_map_type::iterator iterator
 					= m_usersMap.find(pipeling.user.nickname);
 				if (iterator != m_usersMap.end()) {
@@ -202,7 +215,7 @@ class IrcUsers {
 				else {
 					//m_usersMap.erase(iterator);
 					m_usersMap[pipeling.user.nickname]
-						= user_id_pair(m_users[pipeling.id], pipeling.id);
+						= pipeling.id;
 				}
 			}
 		}
@@ -220,8 +233,9 @@ class IrcUsers {
 				return;
 			}
 			copyNonEmpty(user, m_TempUser);
-			m_usersMap[pipeling.user.nickname]
-				= user_id_pair(user, pipeling.id);
+			if (pipeling.user.nickname.size())
+				m_usersMap[pipeling.user.nickname]
+					= pipeling.id;
 			m_logStatus = SUCCESS;
 		}
 

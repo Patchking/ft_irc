@@ -399,6 +399,7 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 		[HOSTNAME](extract_argument(arguments))
 		[SERVERNAME](extract_argument(arguments))
 		[REALNAME](extract_argument_colon(arguments));
+		Console::log("LogStatus: ", m_users.logStatus());
 		if (m_users.getTemp().username.empty()
 			|| m_users.getTemp().hostname.empty()
 			|| m_users.getTemp().servername.empty()
