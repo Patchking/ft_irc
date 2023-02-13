@@ -601,9 +601,29 @@ void IrcServer::endMessage() {
 	appendMessage("\n");
 }
 
+void IrcServer::motd_start() {
+	appendMessageBegin(IRC_RPL_MOTDSTART);
+	appendMessage(" :Message of the day.\r\n");
+}
+
+void IrcServer::motd() {
+	appendMessageBegin(IRC_RPL_MOTD);
+	appendMessage(" :Welcome and some other crap.\r\n");
+}
+
+void IrcServer::motd_end() {
+	appendMessageBegin(IRC_RPL_ENDOFMOTD);
+	appendMessage(" :End of message of the day.\r\n");
+}
+
 void IrcServer::greet() {
+	motd_start();
+	motd();
+	motd_end();
+	/*
 	appendMessageBegin(IRC_RPL_WELCOME);
 	appendMessage(" :Welcome and some other crap.\r\n");
+	*/
 }
 
 void IrcServer::errorAlreadyRegistered() {

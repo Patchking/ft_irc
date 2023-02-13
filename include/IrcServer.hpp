@@ -4,7 +4,7 @@
 #include "Server.hpp"
 #include <vector>
 
-#define IRC_SERVER_NAME "42irc_serv"
+#define IRC_SERVER_NAME "irc_serv"
 
 namespace ft_irc {
 
@@ -104,6 +104,10 @@ class IrcServer : public Server {
 	void greet();
 	void errorAlreadyRegistered();
 	bool registerUser();
+
+	void motd_start();
+	void motd();
+	void motd_end();
 	private:
 	IrcUsers m_users;
 	std::string m_message;
