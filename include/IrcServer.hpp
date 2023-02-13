@@ -89,13 +89,17 @@ class IrcServer : public Server {
 	void appendMessage(const std::string& message);
 
 	void emptyMessage();
-	void sendMessage();
-	void sendMessage(fd_t);
+	bool sendMessage();
+	bool sendMessage(fd_t);
 	void messageFrom(const User& user);
 	void appendMessage(const User& user);
 	void appendMessageSelf();
 	void appendMessageNick(const User&);
 	void endMessage();
+	void appendMessageBegin(const char *code, int fd);
+	void appendMessageBegin(const char *code);
+	void errorNeedMoreParams();
+	void errorNotRegistered();
 
 	void greet();
 	void errorAlreadyRegistered();

@@ -92,10 +92,11 @@ void skip_line(char const*& str) {
 }
 
 static inline
-std::string extract_argument_colon(const char*& message) {
+std::string extract_argument_colon(const char*& message, bool& colon) {
 	char const *end;
 	skip_space(message);
 	if (*message == ':') {
+		colon = true;
 		++message;
 		end = message;
 		skip_line(end);
@@ -152,311 +153,328 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 		, &IrcServer::whowas
 };
 //ADMIN [<server>]
-	bool IrcServer::admin(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::admin(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //AWAY [<message>]
-	bool IrcServer::away(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::away(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //CONNECT <target server> [<port> [<remote server>]] (RFC 1459)
 //<target server> <port> [<remote server>] ( RFC 2812)
-	bool IrcServer::connect(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::connect(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //DIE 	Tells the server to shut down.[5] 	RFC 281
-	bool IrcServer::die(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::die(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //ERROR <error message>
-	bool IrcServer::error(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::error(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //INFO [<target>]
-	bool IrcServer::info(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::info(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //INVITE <nickname> <channel>
-	bool IrcServer::invite(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::invite(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //ISON <nicknames>
-	bool IrcServer::ison(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::ison(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //JOIN <channels> [<keys>]
-	bool IrcServer::join(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::join(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //KICK <channel> <client> [<message>]
-	bool IrcServer::kick(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::kick(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //KILL <client> <comment> [<remote server> [<server mask>]]
-	bool IrcServer::kill(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
-	bool IrcServer::links(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::kill(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
+bool IrcServer::links(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //LIST [<channels> [<server>]]
-	bool IrcServer::list(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::list(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //LUSERS [<mask> [<server>]]
-	bool IrcServer::luser(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::luser(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //MODE <nickname> <flags> (user)
 //<channel> <flags> [<args>]
-	bool IrcServer::mode(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::mode(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //MOTD [<server>]
-	bool IrcServer::motd(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::motd(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //NAMES [<channels>] (RFC 1459)
 //[<channels> [<server>]] ( RFC 2812)
-	bool IrcServer::names(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::names(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //NICK <nickname> [<hopcount>] (RFC 1459)
 //<nickname>
-	bool IrcServer::nick(const char*& arguments) {
-		std::string nick = extract_argument(arguments);
-		if (nick.empty() || nick == "*") {
-			appendMessage(":");
-			appendMessageSelf();
-			appendMessage(IRC_ERR_NONICKNAMEGIVEN);
-			appendMessage(" * :No nickname parameter.\r\n");
-		}
-		m_users.changeUser(m_currentFd)
-			[NICKNAME](nick);
-		if (m_users.logStatus() & IrcUsers::NICK_ALREADY_USED) {
-			appendMessage(":");
-			appendMessageSelf();
-			appendMessage(IRC_ERR_NICKNAMEINUSE);
-			if (m_users[m_currentFd].nickname.empty())
-				appendMessage(" * ");
-			else
-				appendMessage(m_users[m_currentFd].nickname);
-			appendMessage(" ");
-			appendMessage(nick);
-			appendMessage(" :Nickname in use.\r\n");
-		}
-		if (registerUser())
-			greet();
-		return true;
+bool IrcServer::nick(const char*& arguments) {
+	std::string nick = extract_argument(arguments);
+	if (nick.empty() || nick == "*") {
+		appendMessageBegin(IRC_ERR_NONICKNAMEGIVEN, -1);
+		appendMessage(" :No nickname parameter.\r\n");
 	}
+	m_users.changeUser(m_currentFd)
+		[NICKNAME](nick);
+	if (m_users.logStatus() & IrcUsers::NICK_ALREADY_USED) {
+		appendMessageBegin(IRC_ERR_NICKNAMEINUSE);
+		appendMessage(" ");
+		appendMessage(nick);
+		appendMessage(" :Nickname in use.\r\n");
+	}
+	if (registerUser())
+		greet();
+	return true;
+}
 //NOTICE <msgtarget> <message>
-	bool IrcServer::notice(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::notice(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //OPER <username> <password>
-	bool IrcServer::oper(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::oper(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //PART <channels>
-	bool IrcServer::part(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::part(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //PASS <password>
-	bool IrcServer::pass(const char*& arguments) {
-		if (m_users.connected(m_currentFd)) {
-			errorAlreadyRegistered();
-			return true;
-		}
-		std::string password = extract_argument_colon(arguments);
-		m_users.changeUser(m_currentFd)
-			[PASSWORD](password);
-		if (password.empty()) {
-			appendMessage(":");
-			appendMessageSelf();
-			appendMessage(IRC_ERR_NEEDMOREPARAMS);
-			appendMessage(" * :Need more parameters.\r\n");
-		}
-		if (Server::getPassword() != password) {
-			Console::log("password mismatch (", password, ")");
-			m_users[m_currentFd].password.clear();
-			appendMessage(":");
-			appendMessageSelf();
-			appendMessage(IRC_ERR_PASSWDMISMATCH);
-			appendMessage(" * :Password mismatch.\r\n");
-		}
+bool IrcServer::pass(const char*& arguments) {
+	if (m_users.connected(m_currentFd)) {
+		errorAlreadyRegistered();
 		return true;
 	}
+	bool is_colon;
+	std::string password = extract_argument_colon(arguments, is_colon);
+	m_users.changeUser(m_currentFd)
+		[PASSWORD](password);
+	if (password.empty()) {
+		errorNeedMoreParams();
+	}
+	if (Server::getPassword() != password) {
+		m_users[m_currentFd].password.clear();
+		appendMessageBegin(IRC_ERR_PASSWDMISMATCH);
+		appendMessage(" :Password mismatch.\r\n");
+	}
+	return true;
+}
 //PING <server1> [<server2>]
-	bool IrcServer::ping(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::ping(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //PONG <server2> [<server2>]
-	bool IrcServer::pong(const char*& arguments) {
+bool IrcServer::pong(const char*& arguments) {
 
-		(void)arguments;
-		return true;
-	}
+	(void)arguments;
+	return true;
+}
 //PRIVMSG <msgtarget> <message>
-	bool IrcServer::privmsg(const char*& arguments) {
-
-		(void)arguments;
+bool IrcServer::privmsg(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
 		return true;
 	}
+	std::string nick = extract_argument(arguments);
+	if (nick.empty()) {
+		appendMessageBegin(IRC_ERR_NORECIPIENT);
+		appendMessage(" :No recipient.\r\n");
+		return true;
+	}
+	int user_id = m_users.find(nick);
+	if (user_id < 0) {
+		appendMessageBegin(IRC_ERR_NOSUCHNICK);
+		appendMessage(" :No such nick.\r\n");
+		return true;
+	}
+	bool is_colon;
+	std::string message = extract_argument_colon(arguments, is_colon);
+	if (message.empty()) {
+		appendMessageBegin(IRC_ERR_NOTEXTTOSEND);
+		appendMessage(" :Message must not be empty.\r\n");
+		return true;
+	}
+	User& user = m_users[user_id];
+	appendMessage(":");
+	appendMessage(m_users[m_currentFd]);
+	appendMessage(" PRIVMSG");
+	appendMessageNick(user);
+	appendMessage(" :");
+	appendMessage(message);
+	appendMessage("\r\n");
+	if (sendMessage(user_id)) {
+		appendMessageBegin(IRC_RPL_AWAY);
+		appendMessage(": Sent.\r\n");
+	}
+	return true;
+}
 //QUIT [<message>]
-	bool IrcServer::quit(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::quit(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //REHASH
-	bool IrcServer::rehash(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::rehash(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //RESTART
-	bool IrcServer::restart(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::restart(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //SERVICE <nickname> <reserved> <distribution> <type> <reserved> <info>
-	bool IrcServer::service(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::service(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //SERVLIST [<mask> [<type>]]
-	bool IrcServer::servlist(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::servlist(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //SERVER <servername> <hopcount> <info>
-	bool IrcServer::server(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::server(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //SQUERY <servicename> <text>
-	bool IrcServer::squery(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::squery(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //SQUIT <server> <comment>
-	bool IrcServer::squit(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::squit(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //STATS <query> [<server>]
-	bool IrcServer::stats(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::stats(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //SUMMON <user> [<server>] (RFC 1459)
 //<user> [<server> [<channel>]] (RFC 2812)
-	bool IrcServer::summon(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::summon(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //TIME [<server>]
-	bool IrcServer::time(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::time(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //TOPIC <channel> [<topic>]
-	bool IrcServer::topic(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::topic(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //TRACE [<target>]
-	bool IrcServer::trace(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::trace(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //USER <username> <hostname> <servername> <realname> (RFC 1459)
 //<user> <mode> <unused> <realname> (RFC 2812)
-	bool IrcServer::user(const char*& arguments) {
-		bool success = true;
-		m_users.logUser()
-		[ID](m_currentFd)
-		[USERNAME](extract_argument(arguments))
-		[HOSTNAME](extract_argument(arguments))
-		[SERVERNAME](extract_argument(arguments))
-		[REALNAME](extract_argument_colon(arguments));
-		Console::log("LogStatus: ", m_users.logStatus());
-		if (m_users.getTemp().username.empty()
-			|| m_users.getTemp().hostname.empty()
-			|| m_users.getTemp().servername.empty()
-			|| m_users.getTemp().realname.empty()
-			) {
-			appendMessage(":");
-			appendMessageSelf();
-			appendMessage(IRC_ERR_NEEDMOREPARAMS);
-			appendMessageNick(m_users[m_currentFd]);
-			appendMessage(" :Need more parameters.\r\n");
-			success = false;
-		}
-		if (m_users[m_currentFd].nickname.empty()
-				|| m_users[m_currentFd].nickname == "*")
-			success = false;
-		if (m_users.logStatus() & IrcUsers::ID_ALREADY_USED) {
-			errorAlreadyRegistered();
-			success = false;
-		}
-		if (success && registerUser())
-			greet();
-		return true;
+bool IrcServer::user(const char*& arguments) {
+	bool success = true;
+	bool is_colon;
+	m_users.logUser()
+	[ID](m_currentFd)
+	[USERNAME](extract_argument(arguments))
+	[HOSTNAME](extract_argument(arguments))
+	[SERVERNAME](extract_argument(arguments))
+	[REALNAME](extract_argument_colon(arguments, is_colon));
+	Console::log("LogStatus: ", m_users.logStatus());
+	if (m_users.getTemp().username.empty()
+		|| m_users.getTemp().hostname.empty()
+		|| m_users.getTemp().servername.empty()
+		|| m_users.getTemp().realname.empty()
+		) {
+		errorNeedMoreParams();
+		success = false;
 	}
+	if (m_users[m_currentFd].nickname.empty()
+			|| m_users[m_currentFd].nickname == "*")
+		success = false;
+	if (m_users.logStatus() & IrcUsers::ID_ALREADY_USED) {
+		errorAlreadyRegistered();
+		success = false;
+	}
+	if (success && registerUser())
+		greet();
+	return true;
+}
 //USERHOST <nickname> [<nickname> <nickname> ...]
-	bool IrcServer::userhost(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::userhost(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //USERS [<server>]
-	bool IrcServer::users(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::users(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //VERSION [<server>]
-	bool IrcServer::version(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::version(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //WALLOPS <message>
-	bool IrcServer::wallops(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::wallops(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //WHO [<name> ["o"]]
-	bool IrcServer::who(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::who(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 //WHOIS [<server>] <nicknames>
-	bool IrcServer::whois(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
-	bool IrcServer::whowas(const char*& arguments) {
-		(void)arguments;
-		return true;
-	}
+bool IrcServer::whois(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
+bool IrcServer::whowas(const char*& arguments) {
+	(void)arguments;
+	return true;
+}
 
 bool IrcServer::handleCommand(const std::string& message_string) {
 	const char *message = message_string.c_str();
@@ -533,20 +551,22 @@ void IrcServer::emptyMessage() {
 	m_message.clear();
 }
 
-void IrcServer::sendMessage() {
+bool IrcServer::sendMessage() {
 	if (m_message.empty())
-		return;
+		return false;
 	Console::log("in send[", m_currentFd, "] {\n\t", m_message, "}", Console::ALL);
 	Server::sendMessage(m_currentFd, m_message.c_str());
 	emptyMessage();
+	return true;
 }
 
-void IrcServer::sendMessage(fd_t fd) {
+bool IrcServer::sendMessage(fd_t fd) {
 	if (m_message.empty())
-		return;
+		return false;
 	Console::log("in send[", fd, "] {\n\t", m_message, "}", Console::ALL);
 	Server::sendMessage(fd, m_message.c_str());
 	emptyMessage();
+	return true;
 }
 
 void IrcServer::appendMessageSelf() {
@@ -582,18 +602,12 @@ void IrcServer::endMessage() {
 }
 
 void IrcServer::greet() {
-	appendMessage(":");
-	appendMessageSelf();
-	appendMessage(IRC_RPL_WELCOME);
-	appendMessageNick(m_users[m_currentFd]);
+	appendMessageBegin(IRC_RPL_WELCOME);
 	appendMessage(" :Welcome and some other crap.\r\n");
 }
 
 void IrcServer::errorAlreadyRegistered() {
-	appendMessage(":");
-	appendMessageSelf();
-	appendMessage(IRC_ERR_ALREADYREGISTRED);
-	appendMessageNick(m_users[m_currentFd]);
+	appendMessageBegin(IRC_ERR_ALREADYREGISTRED);
 	appendMessage(" :Connection already registered.\r\n");
 }
 
@@ -608,6 +622,31 @@ bool IrcServer::registerUser() {
 		return false;
 	user.mode = User::REGULAR;
 	return true;
+}
+
+void IrcServer::appendMessageBegin(const char *code, int fd) {
+	appendMessage(":");
+	appendMessageSelf();
+	appendMessage(code);
+	if (fd > -1)
+		appendMessageNick(m_users[fd]);
+	else
+		appendMessage(" *");
+}
+
+void IrcServer::appendMessageBegin(const char *code) {
+	appendMessageBegin(code, m_currentFd);
+}
+
+void IrcServer::errorNeedMoreParams() {
+	appendMessageBegin(IRC_ERR_NEEDMOREPARAMS, m_currentFd);
+	appendMessage(" :Need more parameters.\r\n");
+}
+
+void IrcServer::errorNotRegistered() {
+	appendMessageBegin(IRC_ERR_NOTREGISTERED, m_currentFd);
+	appendMessage(" :Register with PASS <password> NICK <nick>"
+		"USER <user> <host> <server> :<realname>\r\n");
 }
 
 }

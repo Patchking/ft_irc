@@ -86,21 +86,6 @@ class IrcUsers {
 			, NOT_FULL_DATA = 0x8
 		};
 
-		struct user_id_pair {
-			user_id_pair():user(NULL), id(-1){}
-			user_id_pair(User& userp, int id):user(&userp), id(id){}
-			user_id_pair(const user_id_pair& other)
-				: user(other.user)
-				, id(other.id){}
-			user_id_pair& operator = (const user_id_pair& other) {
-				user = other.user;
-				id = other.id;
-				return *this;
-			}
-			User* user;
-			int id;
-		};
-
 	public:
 		typedef std::map<std::string, int> users_map_type;
 		typedef std::vector<User> container_type;
@@ -108,21 +93,13 @@ class IrcUsers {
 	public:
 		void unlog(int id) {
 			if (id < 0 || m_users.size() <= static_cast<size_t>(id)) {
-				Console::log(id, Console::ALL);
 				return;
 			}
 			User& user = m_users[id];
 			users_map_type::iterator iterator = m_usersMap.find(user.nickname);
-			Console::log("map size: ", m_usersMap.size());
 			if (iterator != m_usersMap.end())
 				m_usersMap.erase(iterator);
-			if (m_usersMap.size())
-				Console::log(m_usersMap.begin()->first
-						, ":", m_usersMap.begin()->second);
-			Console::log("map size: ", m_usersMap.size());
-			Console::log("Unlogged: ", user);
 			clearUser(user);
-			Console::log("Unlogged: ", user);
 		}
 
 		PipelineUser changeUser(int id) {
@@ -204,8 +181,6 @@ class IrcUsers {
 					m_logStatus |= ID_ALREADY_USED;
 			}
 			if (m_TempUser.nickname != pipeling.user.nickname) {
-				if (m_TempUser.nickname.empty())
-					return;
 				users_map_type::iterator iterator
 					= m_usersMap.find(pipeling.user.nickname);
 				if (iterator != m_usersMap.end()) {
@@ -213,7 +188,10 @@ class IrcUsers {
 					pipeling.user.nickname = m_TempUser.nickname;
 				}
 				else {
-					//m_usersMap.erase(iterator);
+					users_map_type::iterator iterator
+						= m_usersMap.find(m_TempUser.nickname);
+					if (iterator != m_usersMap.end())
+						m_usersMap.erase(iterator);
 					m_usersMap[pipeling.user.nickname]
 						= pipeling.id;
 				}
