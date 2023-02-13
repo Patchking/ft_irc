@@ -517,7 +517,7 @@ void IrcServer::run() {
 					return;
 			}
 		}
-		usleep(700000);
+		// usleep(700000);
 	}
 }
 

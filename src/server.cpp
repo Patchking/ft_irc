@@ -49,6 +49,11 @@ const std::vector<Server::message_type>& Server::getMessage() {
 	Console::log("updated: ", m_dt, Console::DEBUG);
 	out.clear();
 	curlast_fd = 0;
+
+	// Получил ли сервер только что какую-либо информацию на прошлом цикле.
+	// Т.к. получение сообщения занимает несколько циклов,
+	// уберает задерку в poll() если севрер получает сообщение.
+	static bool just_something_happend = false;
 	
 	// Поиск новых соединений. Если успешно, сохранине информации о соединении
 	{
@@ -67,7 +72,6 @@ const std::vector<Server::message_type>& Server::getMessage() {
 					, new_connection_descr, Console::LOG);
 			m_connections[new_connection_descr].fd = new_connection_descr;
 			m_connections[new_connection_descr].netstat = csin;
-			// addRecordToFds(new_connection_descr, );
 		}
 	}
 
@@ -80,13 +84,14 @@ const std::vector<Server::message_type>& Server::getMessage() {
 
 	// Trying to determinate is connection free
 	{
-		int pull_return = poll(fds, curlast_fd, 1000);
+		int pull_return = poll(fds, curlast_fd, just_something_happend ? MIN_SERVER_DELAY : MAX_SERVER_DELAY);
 		if (pull_return < 0) {
 			Console::log("Pull returned error, but im not sure what does this mean", Console::GENERAL);
 			Console::log(strerror(errno), Console::GENERAL);
 		}
 	}
 
+	just_something_happend = false;
 	for (int i = 0; i < curlast_fd; i++) {
 		int curfd = fds[i].fd;
 		switch (fds[i].events)
@@ -94,6 +99,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 		case POLLIN: {
 			std::string &readBuffer = m_connections[curfd].readbuffer;
 			if (fds[i].revents == POLLIN) {
+				just_something_happend = true;
 				char buffer[BUFFER_LEN];
 				buffer[0] = '\0';
 				ssize_t result = recv(curfd, buffer, BUFFER_LEN - 1, 0);
