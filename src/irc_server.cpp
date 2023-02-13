@@ -139,7 +139,7 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 		, &IrcServer::die, &IrcServer::error, &IrcServer::info
 		, &IrcServer::invite, &IrcServer::ison, &IrcServer::join
 		, &IrcServer::kick, &IrcServer::kill, &IrcServer::links
-		, &IrcServer::list, &IrcServer::luser, &IrcServer::mode
+		, &IrcServer::list, &IrcServer::lusers, &IrcServer::mode
 		, &IrcServer::motd, &IrcServer::names, &IrcServer::nick
 		, &IrcServer::notice, &IrcServer::oper, &IrcServer::part
 		, &IrcServer::pass, &IrcServer::ping, &IrcServer::pong
@@ -195,7 +195,34 @@ bool IrcServer::ison(const char*& arguments) {
 }
 //JOIN <channels> [<keys>]
 bool IrcServer::join(const char*& arguments) {
-	(void)arguments;
+	std::string channel_name = extract_argument(arguments);
+	if (channel_name.empty()) {
+		errorNeedMoreParams();
+		return true;
+	}
+	if (channel_name[0] != '#') {
+		appendMessageBegin(IRC_ERR_BADCHANMASK);
+		appendMessage(" : Bad channel name\r\n");
+		return true;
+	}
+	channels_type::iterator iterator = m_channels.find(channel_name);
+	if (iterator == m_channels.end()) {
+		channels_type::iterator iterator = m_channels.insert(
+			std::pair<std::string, Channel>
+			(channel_name, Channel())
+		).first;
+		iterator->second.addOperator(m_currentFd);
+	}
+	else {
+		if (iterator->second.isCreep(m_currentFd)) {
+			errorBannedFromChan();
+			return true;
+		}
+		else {
+			iterator->second.addSpeaker(m_currentFd);
+			return true;
+		}
+	}
 	return true;
 }
 //KICK <channel> <client> [<message>]
@@ -218,7 +245,7 @@ bool IrcServer::list(const char*& arguments) {
 	return true;
 }
 //LUSERS [<mask> [<server>]]
-bool IrcServer::luser(const char*& arguments) {
+bool IrcServer::lusers(const char*& arguments) {
 	(void)arguments;
 	return true;
 }
@@ -667,6 +694,11 @@ void IrcServer::errorNotRegistered() {
 	appendMessageBegin(IRC_ERR_NOTREGISTERED, m_currentFd);
 	appendMessage(" :Register with PASS <password> NICK <nick>"
 		"USER <user> <host> <server> :<realname>\r\n");
+}
+
+void IrcServer::errorBannedFromChan() {
+	appendMessageBegin(IRC_ERR_BANNEDFROMCHAN, m_currentFd);
+	appendMessage(" :Cannot join channel (+b)\r\n");
 }
 
 }

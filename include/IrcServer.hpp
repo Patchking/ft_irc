@@ -2,6 +2,7 @@
 
 #include "IrcUsers.hpp"
 #include "Server.hpp"
+#include "Channel.hpp"
 #include <vector>
 
 #define IRC_SERVER_NAME "irc_serv"
@@ -20,6 +21,7 @@ class IrcServer : public Server {
 			, WHO, WHOIS, WHOWAS
 	};*/
 
+	typedef std::map<std::string, Channel> channels_type;
 	typedef bool (IrcServer::*const command_function_type)(const char*&);
 	//typedef Command command_type;
 	typedef Server::message_type message_type;
@@ -39,7 +41,7 @@ class IrcServer : public Server {
 	bool kill(const char*& arguments);
 	bool links(const char*& arguments);
 	bool list(const char*& arguments);
-	bool luser(const char*& arguments);
+	bool lusers(const char*& arguments);
 	bool mode(const char*& arguments);
 	bool motd(const char*& arguments);
 	bool names(const char*& arguments);
@@ -100,6 +102,7 @@ class IrcServer : public Server {
 	void appendMessageBegin(const char *code);
 	void errorNeedMoreParams();
 	void errorNotRegistered();
+	void errorBannedFromChan();
 
 	void greet();
 	void errorAlreadyRegistered();
@@ -110,6 +113,7 @@ class IrcServer : public Server {
 	void motd_end();
 	private:
 	IrcUsers m_users;
+	channels_type m_channels;
 	std::string m_message;
 	fd_t m_currentFd;
 };

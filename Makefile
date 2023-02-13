@@ -6,7 +6,7 @@
 #    By: jzoltan <jzoltan@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/02/03 04:30:43 by jzoltan           #+#    #+#              #
-#    Updated: 2023/02/12 21:16:03 by jzoltan          ###   ########.fr        #
+#    Updated: 2023/02/13 18:12:42 by jzoltan          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 #*
@@ -69,7 +69,7 @@ DEPENDENCIES    =Dependencies
 #*
 
 SOURCES         = \
-	main.cpp server.cpp console.cpp irc_server.cpp irc_user.cpp
+	main.cpp server.cpp console.cpp irc_server.cpp irc_user.cpp channel.cpp
 
 BONUS_SOURCES   =
 

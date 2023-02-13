@@ -1,55 +1,55 @@
-#include "Channel.hpp"
+#include <Channel.hpp>
+#include <algorithm>
 
-bool Channel::isSpeaker(int id) {
-	for (size_t i = 0; i < speakers.size(); i++)
-		if (speakers[i] == id)
-			return true;
-	return false;
+namespace ft_irc {
+
+bool Channel::isSpeaker(int id) const {
+	return std::binary_search(m_speakers.begin(), m_speakers.end(), id);
 }
 
-bool Channel::isOperator(int id) {
-	for (size_t i = 0; i < operators.size(); i++)
-		if (operators[i] == id)
-			return true;
-	return false;
+bool Channel::isCreep(int id) const {
+	return std::binary_search(m_creeps.begin(), m_creeps.end(), id);
+}
+
+bool Channel::isOperator(int id) const {
+	return std::binary_search(m_operators.begin(), m_operators.end(), id);
 }
 
 void Channel::addOperator(int id) {
-    if (!isOperator(id))
-        operators.push_back(id);
+	removeSpeaker(id);
+	m_operators.insert(
+			std::lower_bound(m_operators.begin(), m_operators.end(), id)
+			, id);
 }
 
-void	Channel::addSpeaker(int id){
-    if (!isSpeaker(id))
-        speakers.push_back(id);
+void Channel::addSpeaker(int id){
+	m_operators.insert(
+			std::lower_bound(m_speakers.begin(), m_speakers.end(), id)
+			, id);
+}
+
+void Channel::addCreep(int id){
+	m_operators.insert(
+			std::lower_bound(m_creeps.begin(), m_creeps.end(), id)
+			, id);
 }
 
 void Channel::removeOperator(int id) {
-    if (isOperator(id))
-    {
-        size_t  i;
-        for (i = 0; i < operators.size(); i++)
-            if (operators[i] == id)
-                break;
-        operators.erase(operators.begin() + i);
-        if (operators.size() == 0 && users.size() > 0)
-        {
-            operators.push_back(users[0]);
-            sendMessage("MODE " + this->name + " +o " + users[0]->getNickname() + "\n", user, true);
-        }
-    }
+	iterator it = std::lower_bound(m_operators.begin(), m_operators.end(), id);
+	if (it != m_operators.end() && *it == id)
+		m_operators.erase(it);
 }
 
 void Channel::removeSpeaker(int id) {
-    if (isSpeaker(id))
-    {
-        size_t  i;
-        for (i = 0; i < speakers.size(); i++)
-            if (speakers[i] == id)
-                break;
-        speakers.erase(speakers.begin() + i);
-    }
+	iterator it = std::lower_bound(m_speakers.begin(), m_speakers.end(), id);
+	if (it != m_speakers.end() && *it == id)
+		m_speakers.erase(it);
 }
 
-Channel::~Channel() {
+void Channel::removeCreep(int id) {
+	iterator it = std::lower_bound(m_creeps.begin(), m_creeps.end(), id);
+	if (it != m_creeps.end() && *it == id)
+		m_creeps.erase(it);
+}
+
 }
