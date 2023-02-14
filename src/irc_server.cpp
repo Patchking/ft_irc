@@ -193,14 +193,29 @@ bool IrcServer::ison(const char*& arguments) {
 	(void)arguments;
 	return true;
 }
+
+bool	isValidChannelName(const std::string &name)
+{
+	if (name[0] != '#' && name[0] != '&')
+		return false;
+	for (size_t i = 1; i < name.size(); i++)
+	{
+		if (name[i] == ' ' || name[i] == 7 || name[i] == 0 \
+			|| name[i] == 13 || name[i] == 10 || name[i] == ',')
+			return false;
+	}
+	return true;
+}
+
 //JOIN <channels>
 bool IrcServer::join(const char*& arguments) {
 	std::string channel_name = extract_argument(arguments);
+	std::string channel_name_after_space = extract_argument(arguments);//если есть пробел в названии канала
 	if (channel_name.empty()) {
 		errorNeedMoreParams();
 		return true;
 	}
-	if (channel_name[0] != '#') {
+	if (!isValidChannelName(channel_name) || !channel_name_after_space.empty()) {
 		appendMessageBegin(IRC_ERR_BADCHANMASK);
 		appendMessage(" : Bad channel name\r\n");
 		return true;
@@ -214,7 +229,7 @@ bool IrcServer::join(const char*& arguments) {
 		iterator->second.addOperator(m_currentFd);
 	}
 	else {// канал существует
-		if (iterator->second.isCreep(m_currentFd)) {// пользователь забанен // sega
+		if (iterator->second.isCreep(m_currentFd)) {// пользователь забанен
 			errorBannedFromChan();
 			return true;
 		}
@@ -224,7 +239,7 @@ bool IrcServer::join(const char*& arguments) {
 			// разослать всем в канале сообщение о добавлении нового пользователя
 			return true;
 		}
-		// JOIN 0 - выйти из всех каналов
+		// JOIN 0 - выйти из всех каналов, не обязательно
 	}
 	return true;
 }
