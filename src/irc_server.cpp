@@ -193,7 +193,7 @@ bool IrcServer::ison(const char*& arguments) {
 	(void)arguments;
 	return true;
 }
-//JOIN <channels> [<keys>]
+//JOIN <channels>
 bool IrcServer::join(const char*& arguments) {
 	std::string channel_name = extract_argument(arguments);
 	if (channel_name.empty()) {
@@ -206,33 +206,56 @@ bool IrcServer::join(const char*& arguments) {
 		return true;
 	}
 	channels_type::iterator iterator = m_channels.find(channel_name);
-	if (iterator == m_channels.end()) {
+	if (iterator == m_channels.end()) {// канала ещё нет
 		channels_type::iterator iterator = m_channels.insert(
 			std::pair<std::string, Channel>
 			(channel_name, Channel())
 		).first;
 		iterator->second.addOperator(m_currentFd);
 	}
-	else {
-		if (iterator->second.isCreep(m_currentFd)) {
+	else {// канал существует
+		if (iterator->second.isCreep(m_currentFd)) {// пользователь забанен // sega
 			errorBannedFromChan();
 			return true;
 		}
-		else {
-			iterator->second.addSpeaker(m_currentFd);
+		else {// юзер не забанен
+			iterator->second.addSpeaker(m_currentFd);// sega
+			// добавить сообщение, то что он добавлен в канал
+			// разослать всем в канале сообщение о добавлении нового пользователя
 			return true;
 		}
+		// JOIN 0 - выйти из всех каналов
 	}
 	return true;
 }
 //KICK <channel> <client> [<message>]
 bool IrcServer::kick(const char*& arguments) {
-	(void)arguments;
+	std::string channel = extract_argument(arguments);
+	std::string client = extract_argument(arguments);
+	bool	is_colon;
+	std::string msg = extract_argument_colon(arguments, is_colon);
+	// слишком много арг
+	if (channel.empty() || client.empty()) {// проверка аргументов
+		errorNeedMoreParams();
+		return true;
+	// нет канала
+	// юзера нет в канале
+	}
+	// проверка на опрератора
 	return true;
 }
-//KILL <client> <comment> [<remote server> [<server mask>]]
+//KILL <nickname> <comment>
 bool IrcServer::kill(const char*& arguments) {
-	(void)arguments;
+	std::string nickname = extract_argument(arguments);
+	bool	is_colon;
+	std::string comment = extract_argument_colon(arguments, is_colon);
+	if (nickname.empty() || comment.empty()) {// проверка аргументов
+		errorNeedMoreParams();
+		return true;
+		// проверка сущ юзера
+		// проверка на опрератора 
+	}
+
 	return true;
 }
 bool IrcServer::links(const char*& arguments) {

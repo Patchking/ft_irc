@@ -3,13 +3,13 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: jzoltan <jzoltan@student.42.fr>            +#+  +:+       +#+         #
+#    By: marvin <marvin@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/02/03 04:30:43 by jzoltan           #+#    #+#              #
-#    Updated: 2023/02/13 18:12:42 by jzoltan          ###   ########.fr        #
+#    Updated: 2023/02/14 15:42:11 by marvin           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
-#*
+
 all: compile
 MAKEFLAGS+=r
 MAKEFLAGS+=s
@@ -26,7 +26,7 @@ HAS_BONUS	=
 #*                             Executable name                                *#
 #* ************************************************************************** *#
 #*
-NAME            =ft_irc
+NAME            =ircserv
 DEBUG_NAME      =deb_ft_irc
 BONUS_NAME      =
 #*
