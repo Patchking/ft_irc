@@ -9,18 +9,44 @@ public:
 	typedef std::vector<int> container_type;
 	typedef container_type::iterator iterator;
 	typedef container_type::const_iterator const_iterator;
+	enum Status {
+		SUCCESS
+		, SUCCESS_REMOVED
+		, FAIL_IS_CREEP
+		, FAIL_ALREADY_JOINED
+		, FAIL_NOT_A_CREEP
+		, FAIL_NOT_A_SPEAKER
+		, FAIL_NOT_A_OPERATOR
+		, FAIL_NOT_JOINED
+		, REMOVED_SPEAKER
+		, REMOVED_OPERATOR
+	};
 public:
 	bool isOperator(int id) const;
 	bool isSpeaker(int id) const;
 	bool isCreep(int id) const;
 
-	void addOperator(int id);
-	void addSpeaker(int id);
-	void removeOperator(int id);
-	void removeSpeaker(int id);
-	void removeCreep(int id);
+	//does not check on speakers
+	//may return SUCCESS FAIL_IS_CREEP FAIL_ALREADY_JOINED
+	Status addOperator(int id);
+	//does not check on operators
+	//may return SUCCESS FAIL_IS_CREEP FAIL_ALREADY_JOINED
+	Status addSpeaker(int id);
+	//does check on speakers and operators
+	//does remove a speaker or an operator if found
+	//may return SUCCESS FAIL_IS_CREEP SUCCESS_REMOVED
+	Status addCreep(int id);
+	//make an existing speaker an operator
+	Status op(int id);
+	//make an existing operator a speaker
+	Status deop(int id);
 
-	void addCreep(int id);
+	//FAIL_NOT_JOINED REMOVED_SPEAKER REMOVED_OPERATOR
+	Status remove(int id);
+
+	bool removeOperator(int id);
+	bool removeSpeaker(int id);
+	bool removeCreep(int id);
 
 	template<class Object, class Ret>
 	void for_each(Object& object, Ret (Object::*const function)(int)) const {
