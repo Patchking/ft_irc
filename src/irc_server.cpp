@@ -193,46 +193,84 @@ bool IrcServer::ison(const char*& arguments) {
 	(void)arguments;
 	return true;
 }
-//JOIN <channels> [<keys>]
+
+bool	isValidChannelName(const std::string &name)
+{
+	if (name[0] != '#' && name[0] != '&')
+		return false;
+	for (size_t i = 1; i < name.size(); i++)
+	{
+		if (name[i] == ' ' || name[i] == 7 || name[i] == 0 \
+			|| name[i] == 13 || name[i] == 10 || name[i] == ',')
+			return false;
+	}
+	return true;
+}
+
+//JOIN <channels>
 bool IrcServer::join(const char*& arguments) {
 	std::string channel_name = extract_argument(arguments);
+	std::string channel_name_after_space = extract_argument(arguments);//если есть пробел в названии канала
 	if (channel_name.empty()) {
 		errorNeedMoreParams();
 		return true;
 	}
-	if (channel_name[0] != '#') {
+	if (!isValidChannelName(channel_name) || !channel_name_after_space.empty()) {
 		appendMessageBegin(IRC_ERR_BADCHANMASK);
 		appendMessage(" : Bad channel name\r\n");
 		return true;
 	}
 	channels_type::iterator iterator = m_channels.find(channel_name);
-	if (iterator == m_channels.end()) {
+	if (iterator == m_channels.end()) {// канала ещё нет
 		channels_type::iterator iterator = m_channels.insert(
 			std::pair<std::string, Channel>
 			(channel_name, Channel())
 		).first;
 		iterator->second.addOperator(m_currentFd);
 	}
-	else {
-		if (iterator->second.isCreep(m_currentFd)) {
+	else {// канал существует
+		if (iterator->second.isCreep(m_currentFd)) {// пользователь забанен
 			errorBannedFromChan();
 			return true;
 		}
-		else {
-			iterator->second.addSpeaker(m_currentFd);
+		else {// юзер не забанен
+			iterator->second.addSpeaker(m_currentFd);// sega
+			// добавить сообщение, то что он добавлен в канал
+			// разослать всем в канале сообщение о добавлении нового пользователя
 			return true;
 		}
+		// JOIN 0 - выйти из всех каналов, не обязательно
 	}
 	return true;
 }
 //KICK <channel> <client> [<message>]
 bool IrcServer::kick(const char*& arguments) {
-	(void)arguments;
+	std::string channel = extract_argument(arguments);
+	std::string client = extract_argument(arguments);
+	bool	is_colon;
+	std::string msg = extract_argument_colon(arguments, is_colon);
+	// слишком много арг
+	if (channel.empty() || client.empty()) {// проверка аргументов
+		errorNeedMoreParams();
+		return true;
+	// нет канала
+	// юзера нет в канале
+	}
+	// проверка на опрератора
 	return true;
 }
-//KILL <client> <comment> [<remote server> [<server mask>]]
+//KILL <nickname> <comment>
 bool IrcServer::kill(const char*& arguments) {
-	(void)arguments;
+	std::string nickname = extract_argument(arguments);
+	bool	is_colon;
+	std::string comment = extract_argument_colon(arguments, is_colon);
+	if (nickname.empty() || comment.empty()) {// проверка аргументов
+		errorNeedMoreParams();
+		return true;
+		// проверка сущ юзера
+		// проверка на опрератора 
+	}
+
 	return true;
 }
 bool IrcServer::links(const char*& arguments) {

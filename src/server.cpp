@@ -46,7 +46,7 @@ Server::Server(int port_, std::string passwd) : port(port_)
 }
 
 const std::vector<Server::message_type>& Server::getMessage() {
-	Console::log("updated: ", m_dt, Console::DEBUG);
+	// Console::log("updated: ", m_dt, Console::DEBUG);
 	out.clear();
 	curlast_fd = 0;
 
