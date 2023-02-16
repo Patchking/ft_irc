@@ -1,4 +1,5 @@
-#pragma once
+#ifndef IRCUSERS_HPP
+#define IRCUSERS_HPP
 #include "IrcUser.hpp"
 #include <map>
 #include <vector>
@@ -262,3 +263,5 @@ class IrcUsers {
 		int m_tempid;
 };
 }
+
+#endif

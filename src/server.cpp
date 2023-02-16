@@ -157,6 +157,14 @@ const std::vector<Server::message_type>& Server::getMessage() {
 	return out;
 }
 
+Server::~Server()
+{
+	for (connections_type::iterator it = m_connections.begin(); it != m_connections.end(); ++it) {
+		close(it->first);
+	}
+	close(m_sock);
+}
+
 void Server::sendMessage(fd_t fd, const std::string &message)
 {
 	if (fd == 0) {

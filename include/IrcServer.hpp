@@ -1,4 +1,5 @@
-#pragma once
+#ifndef IRCSERVER_HPP
+#define IRCSERVER_HPP
 
 #include "IrcUsers.hpp"
 #include "Server.hpp"
@@ -27,6 +28,7 @@ class IrcServer : public Server {
 	typedef Server::message_type message_type;
 
 	IrcServer(int port, const char* password);
+	~IrcServer();
 
 	bool admin(const char*& arguments);
 	bool away(const char*& arguments);
@@ -127,3 +129,5 @@ class IrcServer : public Server {
 };
 
 }//namespace ft_irc
+
+#endif

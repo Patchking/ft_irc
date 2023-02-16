@@ -278,10 +278,12 @@ bool IrcServer::join(const char*& arguments) {
 		else {// юзер не забанен
 			iterator->second.addSpeaker(m_currentFd);
 			notification(IRC_RPL_NAMREPLY, " " + m_users[m_currentFd].nickname + " is joining the channel " + channel_name + "\r\n");//сообщение, то что он добавлен в канал +
-			// разослать всем в канале сообщение о добавлении нового пользователя (не реализованы сообщения в канале)
+			// разослал всем в канале сообщение о добавлении нового пользователя
+			channels_type::iterator iterator = m_channels.find(channel_name);
+			Channel& channel = iterator->second;
+			messageInChannel(channel);
 			return true;
 		}
-		// JOIN 0 - выйти из всех каналов, не обязательно
 	}
 	return true;
 }
@@ -959,6 +961,11 @@ void IrcServer::motd() {
 void IrcServer::motd_end() {
 	appendMessageBegin(IRC_RPL_ENDOFMOTD);
 	appendMessage(" :End of message of the day.\r\n");
+}
+
+IrcServer::~IrcServer()
+{
+
 }
 
 void IrcServer::greet() {

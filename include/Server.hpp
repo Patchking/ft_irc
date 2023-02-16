@@ -11,8 +11,12 @@
 #include <poll.h>
 #include <sys/socket.h>
 #include "Console.hpp"
-#include "main.hpp"
 #include "Networking.hpp"
+
+#define BUFFER_LEN 512
+#define MAX_CONNECTION 1024
+#define MIN_SERVER_DELAY 1
+#define MAX_SERVER_DELAY 1000
 
 namespace ft_irc {
 
@@ -42,17 +46,10 @@ public:
 	typedef std::map<fd_t, connection_type> connections_type;
 public:
     Server(int port_, std::string passwd);
-	//TODO should not exist
     const std::vector<struct message_type>& getMessage();
+	~Server();
 
-	//TODO (if no messages, should wait for a message)
-	//should perform other work like pinging connections.
-	message_type recieveMessage();
-
-	//TODO
     void terminateConnection(fd_t fd);
-	//TODO
-	void shutdown();
     void sendMessage(fd_t fd, const std::string &message); // Для отправки сообщения юзеру с заданым дескриптором. Список юзеров хранится в users.
 
     void setPassword(const std::string& password) { m_password = password; }
