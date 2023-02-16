@@ -1,4 +1,4 @@
-#include <IrcServer.hpp>
+#include "IrcServer.hpp"
 #include <IrcReplies.hpp>
 
 namespace ft_irc {
@@ -240,6 +240,15 @@ bool	isValidChannelName(const std::string &name)
 	return true;
 }
 
+void IrcServer::appendMsg(int fd) {
+	if () {// если это юзер
+
+	}
+	else {// если это оператор
+		
+	}
+}
+
 //JOIN <channels>
 bool IrcServer::join(const char*& arguments) {
 	if (!m_users.connected(m_currentFd)) {//пользователь зарегистрирован?
@@ -278,10 +287,14 @@ bool IrcServer::join(const char*& arguments) {
 		else {// юзер не забанен
 			iterator->second.addSpeaker(m_currentFd);
 			notification(IRC_RPL_NAMREPLY, " " + m_users[m_currentFd].nickname + " is joining the channel " + channel_name + "\r\n");//сообщение, то что он добавлен в канал +
+			appendMessageBegin(IRC_RPL_NAMREPLY);
+			m_message += " = " + channel_name + " :";
 			// разослал всем в канале сообщение о добавлении нового пользователя
 			channels_type::iterator iterator = m_channels.find(channel_name);
 			Channel& channel = iterator->second;
 			messageInChannel(channel);
+			channel.for_each_operator(*this, &IrcServer::sendMsgToConsole);
+			channel.for_each_speaker(*this, &IrcServer::sendMsgToConsole);
 			return true;
 		}
 	}

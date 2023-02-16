@@ -109,6 +109,7 @@ class IrcServer : public Server {
 	void notification(const char *rpl, std::string str);
 	void messageInChannel(const Channel& channel);
 	void sendMsgToUser(int fd);
+	void sendMsgToConsole(int fd);
 	bool isInChannel(const Channel& channel);
 	bool isChannelOperator(const Channel& channel);
 	bool checkChannelEmpty(Channel&);

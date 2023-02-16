@@ -53,11 +53,12 @@ public:
 
 	template<class Object, class Ret>
 	void for_each(Object& object, Ret (Object::*const function)(int)) const {
-		for (container_type::const_iterator it = m_operators.begin()
-				, end = m_operators.end()
-				; it != end; ++it) {
-			(object.*function)(*it);
-		}
+		for_each_speaker(object, function);
+		for_each_operator(object, function);
+	}
+
+	template<class Object, class Ret>
+	void for_each_speaker(Object& object, Ret (Object::*const function)(int)) const {
 		for (container_type::const_iterator it = m_speakers.begin()
 				, end = m_speakers.end()
 				; it != end; ++it) {
@@ -65,6 +66,14 @@ public:
 		}
 	}
 
+	template<class Object, class Ret>
+	void for_each_operator(Object& object, Ret (Object::*const function)(int)) const {
+		for (container_type::const_iterator it = m_operators.begin()
+				, end = m_operators.end()
+				; it != end; ++it) {
+			(object.*function)(*it);
+		}
+	}
 
 	container_type& getSpeakers();
 	container_type& getOperators();
