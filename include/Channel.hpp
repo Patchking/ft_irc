@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CHANNEL_HPP
+#define CHANNEL_HPP
 #include <map>
 #include <vector>
 
@@ -68,3 +69,5 @@ private:
 };
 
 }
+
+#endif

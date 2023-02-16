@@ -710,6 +710,11 @@ void IrcServer::motd_end() {
 	appendMessage(" :End of message of the day.\r\n");
 }
 
+IrcServer::~IrcServer()
+{
+
+}
+
 void IrcServer::greet() {
 	motd_start();
 	motd();

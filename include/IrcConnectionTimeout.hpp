@@ -1,4 +1,6 @@
-#pragma once
+#ifndef IRCCONNECTIONTIMEOUT_HPP
+#define IRCCONNECTIONTIMEOUT_HPP
+
 #include <ctime>
 
 namespace ft_irc {
@@ -15,3 +17,5 @@ class IrcConnectionTimeout {
 };
 
 }
+
+#endif

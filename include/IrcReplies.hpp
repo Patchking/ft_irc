@@ -1,4 +1,6 @@
-#pragma once
+#ifndef IRCREPLIES
+#define IRCREPLIES
+
 #define IRC_RPL_WELCOME " 001"
 #define IRC_RPL_YOURHOST " 002"
 #define IRC_RPL_CREATED " 003"
@@ -379,3 +381,5 @@ class IrcReply {
 		std::clock_t clock;
 };
 }
+
+#endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef COLOR_HPP
+#define COLOR_HPP
 namespace dtg {
 	enum SEC {};
 	enum FIR {};
@@ -406,3 +407,5 @@ namespace dtg {
 	};
 
 }//namespace dtg
+
+#endif

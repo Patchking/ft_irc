@@ -1,6 +1,7 @@
-#include <IrcServer.hpp>
 #include "main.hpp"
-#include <Abort.hpp>
+
+ft_irc::IrcServer *g_server_link = NULL;
+
 //TODO implement atoi
 int atoi(char const *);
 
@@ -24,10 +25,11 @@ void check_input(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+	signal(SIGINT, ft_irc::ft_sig_handler);
 	ft_irc::Console::set_log_level(ft_irc::Console::DEBUG);
     check_input(argc, argv);
     int port = atoi(argv[1]);
 	ft_irc::Console::log("Init server, port - ", port, ft_irc::Console::GENERAL);
-	ft_irc::IrcServer serv(port, argv[2]);
-    serv.run();
+	g_server_link = new ft_irc::IrcServer(port, argv[2]);
+    g_server_link->run();
 }

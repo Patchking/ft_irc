@@ -1,4 +1,5 @@
-#pragma once
+#ifndef IRCUSER_HPP
+#define IRCUSER_HPP
 #include <string>
 #include <ostream>
 
@@ -22,3 +23,5 @@ namespace ft_irc {
 std::ostream& operator <<(std::ostream& stream, const ft_irc::User::Mode mode);
 
 std::ostream& operator <<(std::ostream& stream, const ft_irc::User& user);
+
+#endif
