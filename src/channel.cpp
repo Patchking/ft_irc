@@ -108,4 +108,21 @@ bool Channel::removeCreep(int id) {
 	return false;
 }
 
+bool Channel::empty() {
+	return m_operators.empty() && m_speakers.empty();
+}
+
+Channel::container_type& Channel::getSpeakers() {
+	return m_speakers;
+}
+Channel::container_type& Channel::getOperators() {
+	return m_operators;
+}
+const Channel::container_type& Channel::getSpeakers() const {
+	return m_speakers;
+}
+const Channel::container_type& Channel::getOperators() const {
+	return m_operators;
+}
+
 }

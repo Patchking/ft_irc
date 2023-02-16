@@ -109,6 +109,8 @@ class IrcServer : public Server {
 	void sendMsgToUser(int fd);
 	bool isInChannel(const Channel& channel);
 	bool isChannelOperator(const Channel& channel);
+	bool checkChannelEmpty(Channel&);
+	void makeOp(Channel& channel, int id);
 
 	void greet();
 	void errorAlreadyRegistered();

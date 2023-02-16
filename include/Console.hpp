@@ -218,7 +218,9 @@ private:
 	}
 	static void post_log(Level level) {
 		(void)level;
+		//std::cout << dtg::color<dtg::NORMAL>();
 		std::cout << dtg::color<dtg::NORMAL>();
+		std::cout.flush();
 	}
 private:
 	static Level m_level; // default = 0
