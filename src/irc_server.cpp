@@ -38,10 +38,6 @@ std::ptrdiff_t binary_search(const char*const* commands
 	return -1;
 }
 
-static inline
-void skip_space(const char*& str) {
-	for (;' ' == *str; ++str);
-}
 
 static inline
 void skip_nonspace(const char*& str) {
@@ -56,6 +52,11 @@ void skip_nonspace(const char*& str) {
 				;
 		}
 	}
+}
+
+static inline
+void skip_space(const char*& str) {
+	for (;' ' == *str; ++str);
 }
 
 static inline
@@ -240,8 +241,7 @@ bool IrcServer::join(const char*& arguments) {
 		}
 		else {// юзер не забанен
 			iterator->second.addSpeaker(m_currentFd);
-			// добавить сообщение, то что он добавлен в канал +
-			notification(IRC_RPL_NAMREPLY, " " + m_users[m_currentFd].nickname + " is joining the channel " + channel_name + "\r\n");//как изменять IRC_RPL_NAMREPLY?
+			notification(IRC_RPL_NAMREPLY, " " + m_users[m_currentFd].nickname + " is joining the channel " + channel_name + "\r\n");//сообщение, то что он добавлен в канал +
 			// разослать всем в канале сообщение о добавлении нового пользователя (не реализованы сообщения в канале)
 			return true;
 		}
@@ -377,15 +377,20 @@ bool IrcServer::pong(const char*& arguments) {
 	return true;
 }
 
-void IrcServer::messageInChannel(std::string channel_name, std::string message) {
-	(void)channel_name;
-	(void)message;
-	// если канала нет
-		// уведомление - такого канала нет
+void IrcServer::sendMsgToUser(int fd) {
+	if (m_currentFd != fd)// сейчас отправитель получает сообщение тоже
+		Server::sendMessage(fd, m_message);
+}
+
+void IrcServer::messageInChannel(std::string channel_name) {
+	channels_type::iterator iterator = m_channels.find(channel_name);
+	if (iterator == m_channels.end())// канала нет
+		notification(IRC_ERR_NOSUCHCHANNEL, " " + channel_name + " :No such channel\r\n");
 	// если канал есть
-		// вывести сообщение в канал
-	std::cout << channel_name + ' ' << message << std::endl;
-	// 
+	else {// вывести сообщение в канал
+		Channel &channel = iterator->second;
+		channel.for_each(*this, &IrcServer::sendMsgToUser);
+		}
 }
 
 //PRIVMSG <msgtarget> <message>
@@ -403,7 +408,15 @@ bool IrcServer::privmsg(const char*& arguments) {
 	bool is_colon;
 	if (nick[0] == '#' || nick[0] == '&') {//сообщение в канал
 		std::string message = extract_argument_colon(arguments, is_colon);
-		messageInChannel(nick, message);
+		// sendMessage();
+		appendMessage(":");
+		appendMessage(m_users[m_currentFd]);
+		appendMessage(" PRIVMSG ");
+		appendMessage(nick);
+		appendMessage(" :");
+		appendMessage(message);
+		appendMessage("\r\n");
+		messageInChannel(nick);
 		return true;
 	}
 	int user_id = m_users.find(nick);
