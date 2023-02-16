@@ -23,7 +23,8 @@ class IrcServer : public Server {
 	};*/
 
 	typedef std::map<std::string, Channel> channels_type;
-	typedef bool (IrcServer::*const command_function_type)(const char*&);
+	typedef bool (IrcServer::*const command_function_type)
+		(const char*&);
 	//typedef Command command_type;
 	typedef Server::message_type message_type;
 
@@ -84,8 +85,10 @@ class IrcServer : public Server {
 	void setCurrent(const message_type& message);
 	void run();
 
+	static const char *const bot_commands[4];
 	static const char *const commands[46];
 	static const command_function_type command_functions[46];
+	static const command_function_type bot_command_functions[4];
 	private:
 	User& currentUser();
 
@@ -102,6 +105,7 @@ class IrcServer : public Server {
 	void endMessage();
 	void appendMessageBegin(const char *code, int fd);
 	void appendMessageBegin(const char *code);
+	void appendMessageBot();
 	void errorNeedMoreParams();
 	void errorNotRegistered();
 	void errorBannedFromChan();
@@ -121,6 +125,14 @@ class IrcServer : public Server {
 	void motd_start();
 	void motd();
 	void motd_end();
+
+	void bot(const char *str);
+
+	void bot_unknown_command();
+	void bot_die(const char *&);
+	void bot_hello(const char *&);
+	void bot_help(const char *&);
+	void bot_roll(const char *&);
 	private:
 	IrcUsers m_users;
 	channels_type m_channels;

@@ -1,5 +1,6 @@
 #include <IrcServer.hpp>
 #include <IrcReplies.hpp>
+#include <cstdlib>
 
 namespace ft_irc {
 
@@ -133,6 +134,20 @@ const char *const IrcServer::commands[46] = {
 			, "SERVER", "SQUERY", "SQUIT", "STATS", "SUMMON", "TIME"
 			, "TOPIC", "TRACE", "USER", "USERHOST", "USERS", "VERSION"
 			, "WALLOPS", "WHO", "WHOIS", "WHOWAS"
+};
+
+const char *const IrcServer::bot_commands[4] = {
+	"die",
+	"hello",
+	"help",
+	"roll"
+};
+
+const IrcServer::command_function_type IrcServer::bot_command_functions[46] = {
+	&IrcServer::bot_die,
+	&IrcServer::bot_hello,
+	&IrcServer::bot_help,
+	&IrcServer::bot_roll,
 };
 
 const IrcServer::command_function_type IrcServer::command_functions[46] = {
@@ -984,6 +999,273 @@ void IrcServer::motd_end() {
 	appendMessage(" :End of message of the day.\r\n");
 }
 
+void IrcServer::bot(const char *str) {
+	std::ptrdiff_t cid = binary_search(commands, 46, str);
+	if (-1 != cid) {
+		skip_nonspace(str);
+		(this->*command_functions[cid])(str);
+	}
+	else
+		bot_unknown_command();
+}
+void IrcServer::bot_unknown_command() {
+	int rnd = std::rand() & 15;
+	switch(rnd) {
+		case 0:
+			appendMessage("больше сюда не пиши,"
+				" от тебя гавной воняет даже отсюда.."
+				" с телефона чуствую пидарас\r\n");
+		break; case 1:
+			appendMessage("Да ладна.");
+		break; case 2:
+			appendMessage("");
+		break; case 3:
+			appendMessage("");
+		break; case 4:
+			appendMessage("");
+		break; case 5:
+			appendMessage("");
+		break; case 6:
+			appendMessage("");
+		break; case 7:
+			appendMessage("");
+		break; case 8:
+			appendMessage("");
+		break; case 9:
+			appendMessage("");
+		break; case 10:
+			appendMessage("");
+		break; case 11:
+			appendMessage("");
+		break; case 12:
+			appendMessage("");
+		break; case 13:
+			appendMessage("");
+		break; case 14:
+			appendMessage("");
+		break; case 15:
+			appendMessage("");
+	}
+}
+
+void IrcServer::appendMessageBot() {
+	if (m_message.size() > 272)
+		sendMessage();
+	appendMessage(":bot PRIVMSG ");
+	appendMessageNick(m_users[m_currentFd]);
+	appendMessage(" :");
+}
+
+void IrcServer::bot_die(const char*& str) {
+	int rnd = std::rand() & 15;
+	switch(rnd) {
+		case 0:
+			appendMessage("Сам умри.\r\n");
+		break; case 1:
+			appendMessage("Ублюдок, как у тебя вообще "
+				"наглости хватает писать такое в "
+				"год 435-летия Воронежа.\r\n");
+		break; case 2:
+			appendMessage(
+			"Суре, Артифициал Интелидженс (AI) "
+			"реферс ту машинес тхат аре проограмед "
+			"то преформ таске тхат ординарили "
+			"реекуир хуман интелидженс то "
+			"аккомплиш.\r\n");
+			appendMessageBot();
+			appendMessage(
+			"Al цан бе дескрибед ас э "
+			"комплекс сет оф алгоритмс тхат "
+			"енаблес машинес то \"миссион контрол\" "
+			"челенгес, креате нью паттернс, анд лерн "
+			"фром дата.\r\n");
+			appendMessageBot();
+			appendMessage(
+			"ААІ цан бе категоризед инто "
+			"дво киндс: симпле рулес-басед системс "
+			"анд комплекс нейралнетворкс. Al гас "
+			"маны ексамплес оф реал-ворлд "
+			"аппликатионс, инклудинг селф-драйвинг "
+			"карс, виртуал ассистантс, фрод "
+			"детектион, и медикал диагносис.\r\n");
+		break; case 3:
+			appendMessage(
+				"Чё те дать? Иди сам возьми.\r\n");
+		break; case 4:
+			appendMessage("");
+		break; case 5:
+			appendMessage("");
+		break; case 6:
+			appendMessage("");
+		break; case 7:
+			appendMessage("");
+		break; case 8:
+			appendMessage("");
+		break; case 9:
+			appendMessage("");
+		break; case 10:
+			appendMessage("");
+		break; case 11:
+			appendMessage("");
+		break; case 12:
+			appendMessage("");
+		break; case 13:
+			appendMessage("");
+		break; case 14:
+			appendMessage("");
+		break; case 15:
+			appendMessage("");
+	}
+}
+void IrcServer::bot_hello(const char*& str) {
+	(void)str;
+	int rnd = std::rand() & 15;
+	switch(rnd) {
+		case 0:
+		break; case 1:
+		break; case 2:
+			appendMessage("");
+		break; case 3:
+			appendMessage("");
+		break; case 4:
+			appendMessage("");
+		break; case 5:
+			appendMessage("");
+		break; case 6:
+			appendMessage("");
+		break; case 7:
+			appendMessage("");
+		break; case 8:
+			appendMessage("");
+		break; case 9:
+			appendMessage("");
+		break; case 10:
+			appendMessage("");
+		break; case 11:
+			appendMessage("");
+		break; case 12:
+			appendMessage("");
+		break; case 13:
+			appendMessage("");
+		break; case 14:
+			appendMessage("");
+		break; case 15:
+			appendMessage("");
+	}
+}
+void IrcServer::bot_help(const char*& str) {
+	int rnd = std::rand() & 15;
+	(void)str;
+	switch(rnd) {
+		case 0:
+			appendMessage("Сам умри.");
+		break; case 1:
+			appendMessage("Я знаю 4 слова: "
+					"roll, die, hello, ");
+		break; case 2:
+			appendMessage("");
+		break; case 3:
+			appendMessage("");
+		break; case 4:
+			appendMessage("");
+		break; case 5:
+			appendMessage("");
+		break; case 6:
+			appendMessage("");
+		break; case 7:
+			appendMessage("");
+		break; case 8:
+			appendMessage("");
+		break; case 9:
+			appendMessage("");
+		break; case 10:
+			appendMessage("");
+		break; case 11:
+			appendMessage("");
+		break; case 12:
+			appendMessage("");
+		break; case 13:
+			appendMessage("");
+		break; case 14:
+			appendMessage("");
+		break; case 15:
+			appendMessage("");
+	}
+}
+void IrcServer::bot_roll(const char*& str) {
+	static char const *deck[52] = {
+	"2♠️", "3♠️", "4♠️", "5♠️", "6♠️", "7♠️", "8♠️",
+	"9♠️", "10♠️", "J♠️", "Q♠️", "K♠️", "A♠️",
+	"2♥️", "3♥️", "4♥️", "5♥️", "6♥️", "7♥️", "8♥️",
+	"9♥️", "10♥️", "J♥️", "Q♥️", "K♥️", "A♥️",
+	"2♦️", "3♦️", "4♦️", "5♦️", "6♦️", "7♦️", "8♦️",
+	"9♦️", "10♦️", "J♦️", "Q♦️", "K♦️", "A♦️",
+	"2♣️", "3♣️", "4♣️", "5♣️", "6♣️", "7♣️", "8♣️",
+	"9♣️", "10♣️", "J♣️", "Q♣️", "K♣️", "A♣️"
+	};
+	static char const *rollers[] = {
+		"die", "deck", ""
+	};
+	int roll;
+	std::ptrdiff_t rnd
+		= binary_search(rollers, 2, str);
+	if (rnd == -1) {
+		m_message += "Генераторы: die, deck, religion";
+	}
+	switch(rnd) {
+		case 0:
+			roll = std::rand() & 7;
+			m_message += "Костяшка остановилась на ";
+			m_message += roll + 1;
+		break; case 1:
+			roll = std::rand() % 52;
+			appendMessage("Загадай карту. Ммм. "
+					"Ты выбрал ");
+			m_message += deck[roll];
+		break; case 2: {
+			float r1 = static_cast<float>(
+				std::rand())
+				/ (static_cast<float>(RAND_MAX)/90.f);
+			float r2 = static_cast<float>(
+				std::rand())
+				/ (static_cast<float>(RAND_MAX)/90.f);
+			appendMessage("Ща я тя по айпи вычислю. "
+					"Ты здесь: ");
+			m_message += r1;
+			m_message += std::rand() & 1 ? "с.ш." : "ю.ш.";
+			m_message += r2;
+			m_message += std::rand() & 1 ? "з.д." : "в.д.";
+		}
+		break; case 3:
+			appendMessage("");
+		break; case 4:
+			appendMessage("");
+		break; case 5:
+			appendMessage("");
+		break; case 6:
+			appendMessage("");
+		break; case 7:
+			appendMessage("");
+		break; case 8:
+			appendMessage("");
+		break; case 9:
+			appendMessage("");
+		break; case 10:
+			appendMessage("");
+		break; case 11:
+			appendMessage("");
+		break; case 12:
+			appendMessage("");
+		break; case 13:
+			appendMessage("");
+		break; case 14:
+			appendMessage("");
+		break; case 15:
+			appendMessage("");
+	}
+	appendMessage(".\r\n");
+}
+
 IrcServer::~IrcServer()
 {
 
@@ -1018,6 +1300,8 @@ bool IrcServer::registerUser() {
 }
 
 void IrcServer::appendMessageBegin(const char *code, int fd) {
+	if (m_message.size() > 272)
+		sendMessage();
 	appendMessage(":");
 	appendMessageSelf();
 	appendMessage(code);
