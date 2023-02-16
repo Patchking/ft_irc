@@ -488,7 +488,6 @@ bool IrcServer::user(const char*& arguments) {
 	[HOSTNAME](extract_argument(arguments))
 	[SERVERNAME](extract_argument(arguments))
 	[REALNAME](extract_argument_colon(arguments, is_colon));
-	Console::log("LogStatus: ", m_users.logStatus());
 	if (m_users.getTemp().username.empty()
 		|| m_users.getTemp().hostname.empty()
 		|| m_users.getTemp().servername.empty()
@@ -545,11 +544,9 @@ bool IrcServer::whowas(const char*& arguments) {
 
 bool IrcServer::handleCommand(const std::string& message_string) {
 	const char *message = message_string.c_str();
-	Console::log("handle command ", message);
 	while (*message) {
 		std::ptrdiff_t cid = binary_search(commands, 46, message);
 		if (-1 != cid) {
-			Console::log("command ", commands[cid], " id: ", cid);
 			skip_nonspace(message);
 			if (!(this->*command_functions[cid])(message)) {
 				sendMessage();
@@ -585,13 +582,11 @@ void IrcServer::run() {
 	for (;;) {
 		typedef std::vector<message_type>::const_iterator iterator;
 		const std::vector<message_type>& messages = Server::getMessage();
-		if (messages.size())
-			Console::log("messages recieved: ", messages.size(), Console::DEBUG);
 		for (iterator it = messages.begin(), end = messages.end()
 				; it != end; ++it) {
 			switch (it->event) {
 				break; case DISCONNECTED:
-					Console::log("Disconnected: ", m_users[it->fd], Console::DEBUG);
+					Console::log("Disconnected: ", m_users[it->fd], Console::LOG);
 					m_users.unlog(it->fd);
 				break; case MESSAGE_RECIEVED:
 					setCurrent(*it);
@@ -621,7 +616,6 @@ void IrcServer::emptyMessage() {
 bool IrcServer::sendMessage() {
 	if (m_message.empty())
 		return false;
-	Console::log("in send[", m_currentFd, "] {\n\t", m_message, "}", Console::ALL);
 	Server::sendMessage(m_currentFd, m_message.c_str());
 	emptyMessage();
 	return true;
@@ -630,7 +624,6 @@ bool IrcServer::sendMessage() {
 bool IrcServer::sendMessage(fd_t fd) {
 	if (m_message.empty())
 		return false;
-	Console::log("in send[", fd, "] {\n\t", m_message, "}", Console::ALL);
 	Server::sendMessage(fd, m_message.c_str());
 	emptyMessage();
 	return true;

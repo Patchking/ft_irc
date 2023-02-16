@@ -16,57 +16,96 @@ bool Channel::isOperator(int id) const {
 	return std::binary_search(m_operators.begin(), m_operators.end(), id);
 }
 
-void Channel::addOperator(int id) {
-	removeSpeaker(id);
+static inline
+Channel::Status add(Channel::container_type& container, int id) {
+	Channel::iterator location
+		= std::lower_bound(container.begin(), container.end(), id);
+	if (container.end() == location) {
+		container.push_back(id);
+		return Channel::SUCCESS;
+	}
+	if (*location == id)
+		return Channel::FAIL_ALREADY_JOINED;
+	else
+	container.insert(location, id);
+	return Channel::SUCCESS;
+}
+
+Channel::Status Channel::addOperator(int id) {
+	if (isCreep(id))
+		return FAIL_IS_CREEP;
+	return add(m_operators, id);
+}
+
+Channel::Status Channel::addSpeaker(int id) {
+	if (isCreep(id))
+		return FAIL_IS_CREEP;
+	return add(m_speakers, id);
+}
+
+Channel::Status Channel::addCreep(int id) {
+	Channel::Status status = add(m_creeps, id);
+	if (SUCCESS == status)
+		return Channel::Status(removeOperator(id) or removeSpeaker(id));
+	else
+		return FAIL_IS_CREEP;
+	return SUCCESS;
+}
+
+Channel::Status Channel::op(int id) {
+	const bool removed = removeSpeaker(id);
+	if (not removed)
+		return FAIL_NOT_A_SPEAKER;
+	return add(m_operators, id);
+}
+
+Channel::Status Channel::deop(int id) {
+	const bool removed = removeOperator(id);
+	if (not removed) {
+		return FAIL_NOT_A_OPERATOR;
+	}
+	return add(m_speakers, id);
+}
+
+Channel::Status Channel::remove(int id) {
+	if (removeOperator(id))
+		return REMOVED_OPERATOR;
+	if (removeSpeaker(id))
+		return REMOVED_SPEAKER;
+	return FAIL_NOT_JOINED;
+}
+
+bool Channel::removeOperator(int id) {
 	if (m_operators.empty())
-		m_operators.push_back(id);
-	else
-	m_operators.insert(
-			std::lower_bound(m_operators.begin(), m_operators.end(), id)
-			, id);
-}
-
-void Channel::addSpeaker(int id) {
-	removeOperator(id);
-	if (m_speakers.empty())
-		m_speakers.push_back(id);
-	else
-	m_operators.insert(
-			std::lower_bound(m_speakers.begin(), m_speakers.end(), id)
-			, id);
-}
-
-void Channel::addCreep(int id){
-	if (m_creeps.empty())
-		m_creeps.push_back(id);
-	else
-	m_operators.insert(
-			std::lower_bound(m_creeps.begin(), m_creeps.end(), id)
-			, id);
-}
-
-void Channel::removeOperator(int id) {
-	if (m_operators.empty())
-		return;
+		return false;
 	iterator it = std::lower_bound(m_operators.begin(), m_operators.end(), id);
-	if (it != m_operators.end() && *it == id)
+	if (it != m_operators.end() && *it == id) {
 		m_operators.erase(it);
+		return true;
+	}
+	return false;
 }
 
-void Channel::removeSpeaker(int id) {
+bool Channel::removeSpeaker(int id) {
 	if (m_speakers.empty())
-		return;
+		return false;
 	iterator it = std::lower_bound(m_speakers.begin(), m_speakers.end(), id);
-	if (it != m_speakers.end() && *it == id)
+	if (it != m_speakers.end() && *it == id) {
 		m_speakers.erase(it);
+		return true;
+	}
+	return false;
 }
 
-void Channel::removeCreep(int id) {
+bool Channel::removeCreep(int id) {
 	if (m_creeps.empty())
-		return;
+		return false;
 	iterator it = std::lower_bound(m_creeps.begin(), m_creeps.end(), id);
-	if (it != m_creeps.end() && *it == id)
+	if (it != m_creeps.end() && *it == id) {
 		m_creeps.erase(it);
+		return true;
+	}
+	return false;
 }
 
 }
