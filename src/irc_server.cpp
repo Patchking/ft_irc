@@ -242,27 +242,54 @@ bool IrcServer::join(const char*& arguments) {
 		else {// юзер не забанен
 			iterator->second.addSpeaker(m_currentFd);
 			notification(IRC_RPL_NAMREPLY, " " + m_users[m_currentFd].nickname + " is joining the channel " + channel_name + "\r\n");//сообщение, то что он добавлен в канал +
-			// разослать всем в канале сообщение о добавлении нового пользователя (не реализованы сообщения в канале)
+			// разослал всем в канале сообщение о добавлении нового пользователя
+			channels_type::iterator iterator = m_channels.find(channel_name);
+			Channel& channel = iterator->second;
+			messageInChannel(channel);
 			return true;
 		}
-		// JOIN 0 - выйти из всех каналов, не обязательно
 	}
 	return true;
 }
 //KICK <channel> <client> [<message>]
 bool IrcServer::kick(const char*& arguments) {
-	std::string channel = extract_argument(arguments);
+	std::string channel_name = extract_argument(arguments);
 	std::string client = extract_argument(arguments);
 	bool	is_colon;
-	std::string msg = extract_argument_colon(arguments, is_colon);
-	// слишком много арг
-	if (channel.empty() || client.empty()) {// проверка аргументов
+	std::string message = extract_argument_colon(arguments, is_colon);
+	if (channel_name.empty() || client.empty()) {
 		errorNeedMoreParams();
 		return true;
-	// нет канала
-	// юзера нет в канале
 	}
-	// проверка на опрератора
+	channels_type::iterator iterator = m_channels.find(channel_name);
+	if (iterator == m_channels.end()) {
+		appendMessageBegin(IRC_ERR_NOSUCHCHANNEL);
+		appendMessage(" :No such channel\r\n");
+		return true;
+	}
+	Channel& channel = iterator->second;
+	if (!isChannelOperator(channel))
+		return true;
+	int user_id = m_users.find(client);
+	switch (channel.remove(user_id)) {
+	break; case Channel::FAIL_NOT_JOINED:
+	break; case Channel::REMOVED_SPEAKER:
+	case Channel::REMOVED_OPERATOR:
+		appendMessage(":");
+		appendMessage(m_users[m_currentFd]);
+		appendMessage(" KICK ");
+		appendMessage(channel_name);
+		appendMessageNick(m_users[user_id]);
+		appendMessage(" :");
+		if (message.empty())
+			appendMessage(message);
+		else
+			appendMessage("Has been kicked out");
+		appendMessage("\r\n");
+		messageInChannel(channel);
+		sendMessage(user_id);
+	break; default:;
+	}
 	return true;
 }
 //KILL <nickname> <comment>
@@ -332,7 +359,56 @@ bool IrcServer::nick(const char*& arguments) {
 }
 //NOTICE <msgtarget> <message>
 bool IrcServer::notice(const char*& arguments) {
-	(void)arguments;
+	if (!m_users.connected(m_currentFd)) {
+		return true;
+	}
+	std::string nick = extract_argument(arguments);
+	if (nick.empty()) {
+		return true;
+	}
+	bool is_colon;
+	if (nick[0] == '#'/* || nick[0] == '&'*/) {//сообщение в канал
+		std::string message
+			= extract_argument_colon(arguments, is_colon);
+		channels_type::iterator iterator = m_channels.find(nick);
+		if (m_channels.end() == iterator) {
+			return true;
+		}
+		Channel& channel = iterator->second;
+		if (!isInChannel(channel))
+			return true;
+		sendMessage();
+		appendMessage(":");
+		appendMessage(m_users[m_currentFd]);
+		appendMessage(" NOTICE ");
+		appendMessage(nick);
+		appendMessage(" :");
+		appendMessage(message);
+		appendMessage("\r\n");
+		messageInChannel(channel);
+		emptyMessage();
+		return true;
+	}
+	int user_id = m_users.find(nick);
+	if (user_id < 0) {
+		return true;
+	}
+	std::string message = extract_argument_colon(arguments, is_colon);
+	if (message.empty()) {
+		return true;
+	}
+	User& user = m_users[user_id];
+	appendMessage(":");
+	appendMessage(m_users[m_currentFd]);
+	appendMessage(" NOTICE");
+	appendMessageNick(user);
+	appendMessage(" :");
+	appendMessage(message);
+	appendMessage("\r\n");
+	if (sendMessage(user_id)) {
+		//appendMessageBegin(IRC_RPL_AWAY);
+		//appendMessage(": Sent.\r\n");
+	}
 	return true;
 }
 //OPER <username> <password>
@@ -382,15 +458,8 @@ void IrcServer::sendMsgToUser(int fd) {
 		Server::sendMessage(fd, m_message);
 }
 
-void IrcServer::messageInChannel(std::string channel_name) {
-	channels_type::iterator iterator = m_channels.find(channel_name);
-	if (iterator == m_channels.end())// канала нет
-		notification(IRC_ERR_NOSUCHCHANNEL, " " + channel_name + " :No such channel\r\n");
-	// если канал есть
-	else {// вывести сообщение в канал
-		Channel &channel = iterator->second;
-		channel.for_each(*this, &IrcServer::sendMsgToUser);
-		}
+void IrcServer::messageInChannel(const Channel& channel) {
+	channel.for_each(*this, &IrcServer::sendMsgToUser);
 }
 
 //PRIVMSG <msgtarget> <message>
@@ -406,9 +475,18 @@ bool IrcServer::privmsg(const char*& arguments) {
 		return true;
 	}
 	bool is_colon;
-	if (nick[0] == '#' || nick[0] == '&') {//сообщение в канал
-		std::string message = extract_argument_colon(arguments, is_colon);
-		// sendMessage();
+	if (nick[0] == '#'/* || nick[0] == '&'*/) {//сообщение в канал
+		std::string message
+			= extract_argument_colon(arguments, is_colon);
+		channels_type::iterator iterator = m_channels.find(nick);
+		if (m_channels.end() == iterator) {
+			errorNoSuchChannel(nick);
+			return true;
+		}
+		Channel& channel = iterator->second;
+		if (!isInChannel(channel))
+			return true;
+		sendMessage();
 		appendMessage(":");
 		appendMessage(m_users[m_currentFd]);
 		appendMessage(" PRIVMSG ");
@@ -416,7 +494,7 @@ bool IrcServer::privmsg(const char*& arguments) {
 		appendMessage(" :");
 		appendMessage(message);
 		appendMessage("\r\n");
-		messageInChannel(nick);
+		messageInChannel(channel);
 		return true;
 	}
 	int user_id = m_users.find(nick);
@@ -768,9 +846,38 @@ void IrcServer::errorNotRegistered() {
 		"USER <user> <host> <server> :<realname>\r\n");
 }
 
+void IrcServer::errorNoSuchChannel(const std::string& channel_name) {
+	appendMessageBegin(IRC_ERR_NOSUCHCHANNEL, m_currentFd);
+	appendMessage(channel_name);
+	appendMessage(" :No such channel\r\n");
+}
+
 void IrcServer::errorBannedFromChan() {
 	appendMessageBegin(IRC_ERR_BANNEDFROMCHAN, m_currentFd);
 	appendMessage(" :Cannot join channel (+b)\r\n");
+}
+
+bool IrcServer::isInChannel(const Channel& channel) {
+	if (channel.isSpeaker(m_currentFd)
+			|| channel.isOperator(m_currentFd))
+		return true;
+	appendMessageBegin(IRC_ERR_NOTONCHANNEL, m_currentFd);
+	appendMessage(" :You're not on that channel\r\n");
+	return false;
+}
+
+bool IrcServer::isChannelOperator(const Channel& channel) {
+	if (!channel.isOperator(m_currentFd)) {
+		if (!channel.isSpeaker(m_currentFd)) {
+			appendMessageBegin(IRC_ERR_NOTONCHANNEL, m_currentFd);
+			appendMessage(" :You're not on that channel\r\n");
+			return false;
+		}
+		appendMessageBegin(IRC_ERR_CHANOPRIVSNEEDED);
+		appendMessage(" :You're not channel operator");
+		return false;
+	}
+	return true;
 }
 
 void IrcServer::notification(const char *rpl, std::string str) {

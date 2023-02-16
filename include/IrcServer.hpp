@@ -105,9 +105,12 @@ class IrcServer : public Server {
 	void errorNeedMoreParams();
 	void errorNotRegistered();
 	void errorBannedFromChan();
+	void errorNoSuchChannel(const std::string&);
 	void notification(const char *rpl, std::string str);
-	void messageInChannel(std::string channel_name);
+	void messageInChannel(const Channel& channel);
 	void sendMsgToUser(int fd);
+	bool isInChannel(const Channel& channel);
+	bool isChannelOperator(const Channel& channel);
 
 	void greet();
 	void errorAlreadyRegistered();
