@@ -234,11 +234,15 @@ bool IrcServer::join(const char*& arguments) {
 			errorBannedFromChan();
 			return true;
 		}
-		else if (){// юзер не забанен
+		else if (iterator->second.isSpeaker(m_currentFd) || iterator->second.isOperator(m_currentFd)){// юзер уже в канале
+			notification(IRC_RPL_NAMREPLY, " " + m_users[m_currentFd].nickname + " is already in the channel " + channel_name + "\r\n");
+			return true;
+		}
+		else {// юзер не забанен
 			iterator->second.addSpeaker(m_currentFd);
 			// добавить сообщение, то что он добавлен в канал +
 			notification(IRC_RPL_NAMREPLY, " " + m_users[m_currentFd].nickname + " is joining the channel " + channel_name + "\r\n");//как изменять IRC_RPL_NAMREPLY?
-			// разослать всем в канале сообщение о добавлении нового пользователя
+			// разослать всем в канале сообщение о добавлении нового пользователя (не реализованы сообщения в канале)
 			return true;
 		}
 		// JOIN 0 - выйти из всех каналов, не обязательно
@@ -372,6 +376,18 @@ bool IrcServer::pong(const char*& arguments) {
 	(void)arguments;
 	return true;
 }
+
+void IrcServer::messageInChannel(std::string channel_name, std::string message) {
+	(void)channel_name;
+	(void)message;
+	// если канала нет
+		// уведомление - такого канала нет
+	// если канал есть
+		// вывести сообщение в канал
+	std::cout << channel_name + ' ' << message << std::endl;
+	// 
+}
+
 //PRIVMSG <msgtarget> <message>
 bool IrcServer::privmsg(const char*& arguments) {
 	if (!m_users.connected(m_currentFd)) {
@@ -384,13 +400,18 @@ bool IrcServer::privmsg(const char*& arguments) {
 		appendMessage(" :No recipient.\r\n");
 		return true;
 	}
+	bool is_colon;
+	if (nick[0] == '#' || nick[0] == '&') {//сообщение в канал
+		std::string message = extract_argument_colon(arguments, is_colon);
+		messageInChannel(nick, message);
+		return true;
+	}
 	int user_id = m_users.find(nick);
 	if (user_id < 0) {
 		appendMessageBegin(IRC_ERR_NOSUCHNICK);
 		appendMessage(" :No such nick.\r\n");
 		return true;
 	}
-	bool is_colon;
 	std::string message = extract_argument_colon(arguments, is_colon);
 	if (message.empty()) {
 		appendMessageBegin(IRC_ERR_NOTEXTTOSEND);

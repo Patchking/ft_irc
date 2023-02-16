@@ -104,6 +104,7 @@ class IrcServer : public Server {
 	void errorNotRegistered();
 	void errorBannedFromChan();
 	void notification(const char *rpl, std::string str);
+	void messageInChannel(std::string channel_name, std::string message);
 
 	void greet();
 	void errorAlreadyRegistered();
