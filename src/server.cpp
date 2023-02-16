@@ -56,7 +56,26 @@ const std::vector<Server::message_type>& Server::getMessage() {
 	static bool just_something_happend = false;
 	
 	// Поиск новых соединений. Если успешно, сохранине информации о соединении
+
+	addRecordToFds(m_sock, POLLIN);
+	for (connections_type::iterator it = m_connections.begin(); it != m_connections.end(); it++) {
+		addRecordToFds(it->first, POLLIN);
+		if (!it->second.writebuffer.empty()) {
+			addRecordToFds(it->first, POLLOUT);
+		}
+	}
+
+	// Trying to determinate is connection free
 	{
+		int pull_return = poll(fds, curlast_fd, just_something_happend ? MIN_SERVER_DELAY : MAX_SERVER_DELAY);
+		if (pull_return < 0) {
+			Console::log("Pull returned error, but im not sure what does this mean. Skip iteration.", Console::GENERAL);
+			Console::log(strerror(errno), Console::GENERAL);
+			return out;
+		}
+	}
+
+	if (fds[0].revents & POLLIN) {
 		struct sockaddr_in csin;
 		socklen_t csin_len;
 
@@ -75,24 +94,8 @@ const std::vector<Server::message_type>& Server::getMessage() {
 		}
 	}
 
-	for (connections_type::iterator it = m_connections.begin(); it != m_connections.end(); it++) {
-		addRecordToFds(it->first, POLLIN);
-		if (!it->second.writebuffer.empty()) {
-			addRecordToFds(it->first, POLLOUT);
-		}
-	}
-
-	// Trying to determinate is connection free
-	{
-		int pull_return = poll(fds, curlast_fd, just_something_happend ? MIN_SERVER_DELAY : MAX_SERVER_DELAY);
-		if (pull_return < 0) {
-			Console::log("Pull returned error, but im not sure what does this mean", Console::GENERAL);
-			Console::log(strerror(errno), Console::GENERAL);
-		}
-	}
-
 	just_something_happend = false;
-	for (int i = 0; i < curlast_fd; i++) {
+	for (int i = 1; i < curlast_fd; i++) {
 		int curfd = fds[i].fd;
 		switch (fds[i].events)
 		{
