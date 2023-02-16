@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CHANNEL_HPP
+#define CHANNEL_HPP
 #include <map>
 #include <vector>
 
@@ -48,6 +49,8 @@ public:
 	bool removeSpeaker(int id);
 	bool removeCreep(int id);
 
+	bool empty();
+
 	template<class Object, class Ret>
 	void for_each(Object& object, Ret (Object::*const function)(int)) const {
 		for (container_type::const_iterator it = m_operators.begin()
@@ -61,6 +64,12 @@ public:
 			(object.*function)(*it);
 		}
 	}
+
+
+	container_type& getSpeakers();
+	container_type& getOperators();
+	const container_type& getSpeakers() const;
+	const container_type& getOperators() const;
 private:
 	container_type m_speakers;
 	container_type m_operators;
@@ -68,3 +77,5 @@ private:
 };
 
 }
+
+#endif

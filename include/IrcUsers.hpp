@@ -1,4 +1,5 @@
-#pragma once
+#ifndef IRCUSERS_HPP
+#define IRCUSERS_HPP
 #include "IrcUser.hpp"
 #include <map>
 #include <vector>
@@ -221,7 +222,7 @@ class IrcUsers {
 			if (size < 0)
 				return;
 			++size;
-			if (m_users.size() < static_cast<size_t>(size)) {
+			if (m_users.size() <= static_cast<size_t>(size)) {
 				size_t new_size = m_users.size() << 1;
 				new_size = new_size > static_cast<size_t>(size)
 					? new_size : size;
@@ -262,3 +263,5 @@ class IrcUsers {
 		int m_tempid;
 };
 }
+
+#endif

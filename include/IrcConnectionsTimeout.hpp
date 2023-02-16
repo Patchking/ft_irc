@@ -1,4 +1,5 @@
-#pragma once
+#ifndef IRCCONNECTIONSTIMEOUT_HPP
+#define IRCCONNECTIONSTIMEOUT_HPP
 #include <vector>
 #include "IrcConnectionTimeout.hpp"
 
@@ -19,3 +20,5 @@ class IrcConnectionsTimeout {
 	std::vector<IrcConnectionTimeout> m_timeoutQueue;
 };
 }
+
+#endif

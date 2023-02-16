@@ -155,42 +155,74 @@ const IrcServer::command_function_type IrcServer::command_functions[46] = {
 };
 //ADMIN [<server>]
 bool IrcServer::admin(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //AWAY [<message>]
 bool IrcServer::away(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //CONNECT <target server> [<port> [<remote server>]] (RFC 1459)
 //<target server> <port> [<remote server>] ( RFC 2812)
 bool IrcServer::connect(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //DIE 	Tells the server to shut down.[5] 	RFC 281
 bool IrcServer::die(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //ERROR <error message>
 bool IrcServer::error(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //INFO [<target>]
 bool IrcServer::info(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //INVITE <nickname> <channel>
 bool IrcServer::invite(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //ISON <nicknames>
 bool IrcServer::ison(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
@@ -257,6 +289,10 @@ bool IrcServer::join(const char*& arguments) {
 }
 //KICK <channel> <client> [<message>]
 bool IrcServer::kick(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	std::string channel_name = extract_argument(arguments);
 	std::string client = extract_argument(arguments);
 	bool	is_colon;
@@ -274,30 +310,45 @@ bool IrcServer::kick(const char*& arguments) {
 	Channel& channel = iterator->second;
 	if (!isChannelOperator(channel))
 		return true;
+	int save = m_currentFd;
 	int user_id = m_users.find(client);
 	switch (channel.remove(user_id)) {
 	break; case Channel::FAIL_NOT_JOINED:
+		appendMessageBegin(IRC_ERR_USERNOTINCHANNEL);
+		appendMessage(" ");
+		appendMessage(client);
+		appendMessage(" ");
+		appendMessage(channel_name);
+		appendMessage(" :They aren't on that channel\r\n");
 	break; case Channel::REMOVED_SPEAKER:
 	case Channel::REMOVED_OPERATOR:
 		appendMessage(":");
 		appendMessage(m_users[m_currentFd]);
 		appendMessage(" KICK ");
 		appendMessage(channel_name);
-		appendMessageNick(m_users[user_id]);
+		appendMessage(" ");
+		appendMessage(client);
 		appendMessage(" :");
 		if (message.empty())
 			appendMessage(message);
 		else
-			appendMessage("Has been kicked out");
+			appendMessage("Kick hammer");
 		appendMessage("\r\n");
+		m_currentFd = -1;
 		messageInChannel(channel);
+		m_currentFd = save;
 		sendMessage(user_id);
 	break; default:;
 	}
+	checkChannelEmpty(channel);
 	return true;
 }
 //KILL <nickname> <comment>
 bool IrcServer::kill(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	std::string nickname = extract_argument(arguments);
 	bool	is_colon;
 	std::string comment = extract_argument_colon(arguments, is_colon);
@@ -311,33 +362,57 @@ bool IrcServer::kill(const char*& arguments) {
 	return true;
 }
 bool IrcServer::links(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //LIST [<channels> [<server>]]
 bool IrcServer::list(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //LUSERS [<mask> [<server>]]
 bool IrcServer::lusers(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //MODE <nickname> <flags> (user)
 //<channel> <flags> [<args>]
 bool IrcServer::mode(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //MOTD [<server>]
 bool IrcServer::motd(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //NAMES [<channels>] (RFC 1459)
 //[<channels> [<server>]] ( RFC 2812)
 bool IrcServer::names(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
@@ -417,6 +492,10 @@ bool IrcServer::notice(const char*& arguments) {
 }
 //OPER <username> <password>
 bool IrcServer::oper(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
@@ -472,12 +551,19 @@ bool IrcServer::pass(const char*& arguments) {
 }
 //PING <server1> [<server2>]
 bool IrcServer::ping(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //PONG <server2> [<server2>]
 bool IrcServer::pong(const char*& arguments) {
-
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
@@ -524,6 +610,7 @@ bool IrcServer::privmsg(const char*& arguments) {
 		appendMessage(message);
 		appendMessage("\r\n");
 		messageInChannel(channel);
+		emptyMessage();
 		return true;
 	}
 	int user_id = m_users.find(nick);
@@ -554,67 +641,119 @@ bool IrcServer::privmsg(const char*& arguments) {
 }
 //QUIT [<message>]
 bool IrcServer::quit(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //REHASH
 bool IrcServer::rehash(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //RESTART
 bool IrcServer::restart(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //SERVICE <nickname> <reserved> <distribution> <type> <reserved> <info>
 bool IrcServer::service(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //SERVLIST [<mask> [<type>]]
 bool IrcServer::servlist(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //SERVER <servername> <hopcount> <info>
 bool IrcServer::server(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //SQUERY <servicename> <text>
 bool IrcServer::squery(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //SQUIT <server> <comment>
 bool IrcServer::squit(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //STATS <query> [<server>]
 bool IrcServer::stats(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //SUMMON <user> [<server>] (RFC 1459)
 //<user> [<server> [<channel>]] (RFC 2812)
 bool IrcServer::summon(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //TIME [<server>]
 bool IrcServer::time(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //TOPIC <channel> [<topic>]
 bool IrcServer::topic(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //TRACE [<target>]
 bool IrcServer::trace(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
@@ -650,35 +789,63 @@ bool IrcServer::user(const char*& arguments) {
 }
 //USERHOST <nickname> [<nickname> <nickname> ...]
 bool IrcServer::userhost(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //USERS [<server>]
 bool IrcServer::users(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //VERSION [<server>]
 bool IrcServer::version(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //WALLOPS <message>
 bool IrcServer::wallops(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //WHO [<name> ["o"]]
 bool IrcServer::who(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 //WHOIS [<server>] <nicknames>
 bool IrcServer::whois(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
 bool IrcServer::whowas(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {
+		errorNotRegistered();
+		return true;
+	}
 	(void)arguments;
 	return true;
 }
@@ -817,6 +984,11 @@ void IrcServer::motd_end() {
 	appendMessage(" :End of message of the day.\r\n");
 }
 
+IrcServer::~IrcServer()
+{
+
+}
+
 void IrcServer::greet() {
 	motd_start();
 	motd();
@@ -898,7 +1070,7 @@ bool IrcServer::isChannelOperator(const Channel& channel) {
 			return false;
 		}
 		appendMessageBegin(IRC_ERR_CHANOPRIVSNEEDED);
-		appendMessage(" :You're not channel operator");
+		appendMessage(" :You're not channel operator\r\n");
 		return false;
 	}
 	return true;
@@ -907,6 +1079,20 @@ bool IrcServer::isChannelOperator(const Channel& channel) {
 void IrcServer::notification(const char *rpl, std::string str) {
 	appendMessageBegin(rpl, m_currentFd);
 	appendMessage(str);
+}
+
+bool IrcServer::checkChannelEmpty(Channel& channel) {
+	if (channel.getOperators().empty()) {
+		if (channel.getSpeakers().empty())
+			return true;
+		else
+			makeOp(channel, channel.getSpeakers().front());
+	}
+	return false;
+}
+
+void IrcServer::makeOp(Channel& channel, int id) {
+	channel.op(id);
 }
 
 }
