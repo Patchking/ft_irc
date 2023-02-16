@@ -210,6 +210,10 @@ bool	isValidChannelName(const std::string &name)
 
 //JOIN <channels>
 bool IrcServer::join(const char*& arguments) {
+	if (!m_users.connected(m_currentFd)) {//пользователь зарегистрирован?
+		errorNotRegistered();
+		return true;
+	}
 	std::string channel_name = extract_argument(arguments);
 	std::string channel_name_after_space = extract_argument(arguments);//если есть пробел в названии канала
 	if (channel_name.empty()) {
@@ -418,7 +422,32 @@ bool IrcServer::oper(const char*& arguments) {
 }
 //PART <channels>
 bool IrcServer::part(const char*& arguments) {
-	(void)arguments;
+	// (void)arguments;
+	if (!m_users.connected(m_currentFd)) {//пользователь зарегистрирован?
+		errorNotRegistered();
+		return true;
+	}
+	std::string channel_name = extract_argument(arguments);
+	std::string channel_name_after_space = extract_argument(arguments);//если есть пробел в названии канала
+	if (channel_name.empty()) {
+		errorNeedMoreParams();
+		return true;
+	}
+	if (!isValidChannelName(channel_name) || !channel_name_after_space.empty()) {
+		appendMessageBegin(IRC_ERR_BADCHANMASK);
+		appendMessage(" : Bad channel name\r\n");
+		return true;
+	}
+	else {
+		channels_type::iterator iterator = m_channels.find(channel_name);
+		iterator->second.remove(m_currentFd);
+		// notification(IRC_RPL_NAMREPLY, " " + m_users[m_currentFd].nickname + " leave channel " + channel_name + "\r\n");
+		appendMessage(m_users[m_currentFd].nickname + " leave channel " + channel_name + "\r\n");//сообщение, то что он покинул канал
+		// разослал всем в канале сообщение об удалении пользователя
+		Channel& channel = iterator->second;
+		messageInChannel(channel);
+		return true;
+	}
 	return true;
 }
 //PASS <password>
