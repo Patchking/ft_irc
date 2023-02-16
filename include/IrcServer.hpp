@@ -103,6 +103,7 @@ class IrcServer : public Server {
 	void errorNeedMoreParams();
 	void errorNotRegistered();
 	void errorBannedFromChan();
+	void notification(const char *rpl, std::string str);
 
 	void greet();
 	void errorAlreadyRegistered();

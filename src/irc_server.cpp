@@ -227,15 +227,17 @@ bool IrcServer::join(const char*& arguments) {
 			(channel_name, Channel())
 		).first;
 		iterator->second.addOperator(m_currentFd);
+		notification(IRC_RPL_NAMREPLY, " " +  m_users[m_currentFd].nickname + " is joining the channel " + channel_name + "\r\n");
 	}
 	else {// канал существует
 		if (iterator->second.isCreep(m_currentFd)) {// пользователь забанен
 			errorBannedFromChan();
 			return true;
 		}
-		else {// юзер не забанен
-			iterator->second.addSpeaker(m_currentFd);// sega
-			// добавить сообщение, то что он добавлен в канал
+		else if (){// юзер не забанен
+			iterator->second.addSpeaker(m_currentFd);
+			// добавить сообщение, то что он добавлен в канал +
+			notification(IRC_RPL_NAMREPLY, " " + m_users[m_currentFd].nickname + " is joining the channel " + channel_name + "\r\n");//как изменять IRC_RPL_NAMREPLY?
 			// разослать всем в канале сообщение о добавлении нового пользователя
 			return true;
 		}
@@ -737,6 +739,11 @@ void IrcServer::errorNotRegistered() {
 void IrcServer::errorBannedFromChan() {
 	appendMessageBegin(IRC_ERR_BANNEDFROMCHAN, m_currentFd);
 	appendMessage(" :Cannot join channel (+b)\r\n");
+}
+
+void IrcServer::notification(const char *rpl, std::string str) {
+	appendMessageBegin(rpl, m_currentFd);
+	appendMessage(str);
 }
 
 }
