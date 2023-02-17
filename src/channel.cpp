@@ -4,6 +4,8 @@
 
 namespace ft_irc {
 
+Channel::Channel():m_topic("No topic is set"){}
+
 bool Channel::isSpeaker(int id) const {
 	return std::binary_search(m_speakers.begin(), m_speakers.end(), id);
 }
@@ -118,11 +120,17 @@ Channel::container_type& Channel::getSpeakers() {
 Channel::container_type& Channel::getOperators() {
 	return m_operators;
 }
+std::string& Channel::getTopic() {
+	return m_topic;
+}
 const Channel::container_type& Channel::getSpeakers() const {
 	return m_speakers;
 }
 const Channel::container_type& Channel::getOperators() const {
 	return m_operators;
+}
+const std::string& Channel::getTopic() const {
+	return m_topic;
 }
 
 }
