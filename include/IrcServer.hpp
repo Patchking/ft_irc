@@ -5,6 +5,7 @@
 #include "Server.hpp"
 #include "Channel.hpp"
 #include <vector>
+#include "IrcConnectionsTimeout.hpp"
 
 #define IRC_SERVER_NAME "irc_serv"
 
@@ -147,11 +148,15 @@ class IrcServer : public Server {
 	bool bot_hello(const char *&);
 	bool bot_help(const char *&);
 	bool bot_roll(const char *&);
+
+	void sendPing(fd_t fd);
 	private:
 	IrcUsers m_users;
 	channels_type m_channels;
 	std::string m_message;
 	std::string m_temp_string;
+	std::vector<int> m_timedout_counters;
+	IrcConnectionsTimeout m_timer;
 	fd_t m_currentFd;
 };
 

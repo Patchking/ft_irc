@@ -6,7 +6,7 @@
 #    By: marvin <marvin@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/02/03 04:30:43 by jzoltan           #+#    #+#              #
-#    Updated: 2023/02/17 09:38:03 by jzoltan          ###   ########.fr        #
+#    Updated: 2023/02/17 12:32:46 by jzoltan          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -69,7 +69,8 @@ DEPENDENCIES    =Dependencies
 #*
 
 SOURCES         = \
-	main.cpp server.cpp console.cpp irc_server.cpp irc_user.cpp channel.cpp
+	main.cpp server.cpp console.cpp irc_server.cpp irc_user.cpp channel.cpp \
+	IrcConnectionsTimeout.cpp
 
 BONUS_SOURCES   =
 
