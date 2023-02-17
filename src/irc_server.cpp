@@ -289,7 +289,6 @@ bool IrcServer::join(const char*& arguments) {
 	}*/
 	channels_type::iterator iterator = m_channels.find(channel_name);
 	if (iterator == m_channels.end()) {
-		Console::log("channel ", channel_name);
 		channels_type::iterator iterator = m_channels.insert(
 			std::pair<std::string, Channel>
 			(channel_name, Channel())
@@ -571,7 +570,6 @@ bool IrcServer::notice(const char*& arguments) {
 		if (nick.empty()) {
 			return true;
 		}
-		Console::log("channel ", nick, " id: ", m_currentFd);
 		std::string message
 			= extract_argument_colon(arguments, is_colon);
 		channels_type::iterator iterator = m_channels.find(nick);
@@ -719,11 +717,8 @@ bool IrcServer::pong(const char*& arguments) {
 
 void IrcServer::sendMsgToUser(int fd) {
 	if (m_currentFd != fd) {
-		Console::log("Sent", m_message, " to ", fd);
 		Server::sendMessage(fd, m_message);
 	}
-	else
-		Console::log("NOT Sent to ", fd);
 }
 
 void IrcServer::messageInChannel(const Channel& channel) {
@@ -750,7 +745,6 @@ bool IrcServer::privmsg(const char*& arguments) {
 			appendMessage(" :No recipient.\r\n");
 			return true;
 		}
-		Console::log("channel ", nick, " id: ", m_currentFd);
 		std::string message
 			= extract_argument_colon(arguments, is_colon);
 		channels_type::iterator iterator = m_channels.find(nick);
@@ -1091,7 +1085,6 @@ bool IrcServer::handleCommand(const std::string& message_string) {
 		}
 		else {
 			next_line(message);
-			Console::log("invalid command ", message);
 		}
 	}
 	return true;
@@ -1120,7 +1113,6 @@ void IrcServer::run() {
 		const std::vector<message_type>& messages = Server::getMessage();
 		for (int it = m_timer.isSomeoneTimedOut();it != -1
 					; it = m_timer.isSomeoneTimedOut()) {
-				Console::log("timeout ", it);
 				int &i = m_timedout_counters[it];
 				if (i > 2) {
 					terminateConnection(it);
@@ -1181,7 +1173,6 @@ bool IrcServer::sendMessage() {
 bool IrcServer::sendMessage(fd_t fd) {
 	if (m_message.empty())
 		return false;
-	Console::log("sending to ", m_currentFd, " IRC");
 	Server::sendMessage(fd, m_message.c_str());
 	emptyMessage();
 	return true;
@@ -1509,7 +1500,6 @@ bool IrcServer::bot_roll(const char*& str) {
 		rnd = binary_search(rollers, 7, str);
 	else
 		rnd = rand() % 7;
-	Console::log(rnd);
 	switch(rnd) {
 		break; case -1: {
 			m_message += "Генераторы: color, continents, countries, coordinates, deck, die, religion, time..";
@@ -1527,7 +1517,6 @@ bool IrcServer::bot_roll(const char*& str) {
 		}
 		break; case 1:
 			roll = std::rand() % 7;
-			Console::log(roll);
 			m_message += continents[roll];
 			m_message += " затонула.";
 		break; case 2: {
