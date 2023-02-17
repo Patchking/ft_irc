@@ -1128,7 +1128,6 @@ void IrcServer::run() {
 					++i;
 					m_timer.updateTimeout(it);
 					sendPing(it);
-					sendMessage(it);
 				}
 			}
 		for (iterator it = messages.begin(), end = messages.end()
@@ -1721,9 +1720,8 @@ void IrcServer::makeOp(Channel& channel, int id) {
 }
 
 void IrcServer::sendPing(fd_t fd) {
-	appendMessageBegin(" PING", fd);
-	appendMessage(" " IRC_SERVER_NAME);
-	appendMessage("\r\n");
+	appendMessage("PING :irc_serv\r\n");
+	sendMessage(fd);
 }
 
 }
