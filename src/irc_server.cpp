@@ -698,20 +698,17 @@ bool IrcServer::pass(const char*& arguments) {
 }
 //PING <server1> [<server2>]
 bool IrcServer::ping(const char*& arguments) {
-	if (!m_users.connected(m_currentFd)) {
-		errorNotRegistered();
-		return true;
-	}
-	(void)arguments;
+	std::string token = extract_argument(arguments);
+	appendMessageBegin(" PONG");
+	appendMessageBegin(token);
 	return true;
 }
 //PONG <server2> [<server2>]
 bool IrcServer::pong(const char*& arguments) {
-	if (!m_users.connected(m_currentFd)) {
-		errorNotRegistered();
-		return true;
-	}
 	(void)arguments;
+	// std::string token = extract_argument(arguments);
+	// if (token != IRC_SERVER_NAME)
+	// 	return true;
 	return true;
 }
 
