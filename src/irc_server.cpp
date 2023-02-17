@@ -117,6 +117,7 @@ std::string extract_argument_colon(const char*& message, bool& colon) {
 	return ret;
 }
 
+
 static inline
 void next_line(char const*& str) {
 	skip_line(str);
