@@ -1,5 +1,10 @@
 #include "IrcConnectionsTimeout.hpp"
 
+ft_irc::IrcConnectionsTimeout::IrcConnectionsTimeout() : priv_update(getTime())
+{
+
+}
+
 unsigned int ft_irc::IrcConnectionsTimeout::nextTimeout()
 {
     unsigned int curtime = getTime();
@@ -14,10 +19,11 @@ int ft_irc::IrcConnectionsTimeout::isSomeoneTimedOut()
 {
     unsigned int curtime = getTime();
     for (std::map<int, unsigned int>::iterator it = mp.begin(); it != mp.end(); it++) {
-        if (curtime > it->second + DISCONNECT_DELAY)
-            return it->first;
+        if (curtime - it->second > DISCONNECT_DELAY) {
+            return it->first; 
+        }
     }
-    return (0);
+    return (-1);
 }
 
 void ft_irc::IrcConnectionsTimeout::addConnections(int fd)
@@ -32,17 +38,22 @@ void ft_irc::IrcConnectionsTimeout::removeConnections(int fd)
         mp.erase(it);
 }
 
-void ft_irc::IrcConnectionsTimeout::update(int fd)
+void ft_irc::IrcConnectionsTimeout::updateTimeout(int fd)
 {
     std::map<int, unsigned int>::iterator it = mp.find(fd);
     if (it != mp.end())
-        it->second = getTime(); 
+        it->second = getTime();
+}
+
+void ft_irc::IrcConnectionsTimeout::updatePing()
+{
+    priv_update = getTime();
 }
 
 unsigned int ft_irc::IrcConnectionsTimeout::getTime()
 {
     // gettimeofday(&time, NULL);
     // unsigned int out = time.tv_sec * 1000 + time.tv_usec / 1000;
-    std::clock_t time = std::clock() * 1000 / CLOCKS_PER_SEC;
+    std::time_t time = std::time(NULL) * 1000;
     return time;
 }
