@@ -1,9 +1,7 @@
 #include "main.hpp"
-
+#include <cstdlib>
+#include <ctime>
 ft_irc::IrcServer *g_server_link = NULL;
-
-//TODO implement atoi
-int atoi(char const *);
 
 void check_input(int argc, char **argv)
 {
@@ -14,9 +12,9 @@ void check_input(int argc, char **argv)
 				, ft_irc::Console::GENERAL);
 		ft_irc::abort();
     }
-    if (6 < strlen(argv[1])
-			|| atoi(argv[1]) < 1024
-			|| atoi(argv[1]) > 0xffff) {
+    if (6 < std::strlen(argv[1])
+			|| std::atoi(argv[1]) < 1024
+			|| std::atoi(argv[1]) > 0xffff) {
 		ft_irc::Console::log("Error: port must be in range [1024:65535]"
 				, ft_irc::Console::GENERAL);
 		ft_irc::abort();
@@ -25,6 +23,7 @@ void check_input(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+	std::srand(std::time(0));
 	signal(SIGINT, ft_irc::ft_sig_handler);
 	ft_irc::Console::set_log_level(ft_irc::Console::DEBUG);
     check_input(argc, argv);
