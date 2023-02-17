@@ -91,6 +91,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 					, new_connection_descr, Console::LOG);
 			m_connections[new_connection_descr].fd = new_connection_descr;
 			m_connections[new_connection_descr].netstat = csin;
+			out.push_back(message_type(MESSAGE_RECIEVED, new_connection_descr, m_trash));
 		}
 	}
 

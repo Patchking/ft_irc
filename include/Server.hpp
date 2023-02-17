@@ -68,6 +68,7 @@ private:
     int m_sock;
     const int port;
     std::string m_password;
+	std::string m_trash;
     connections_type m_connections;
 };
 }
