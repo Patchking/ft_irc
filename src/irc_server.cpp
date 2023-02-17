@@ -610,7 +610,6 @@ bool IrcServer::oper(const char*& arguments) {
 }
 //PART <channels>
 bool IrcServer::part(const char*& arguments) {
-	// (void)arguments;
 	if (!m_users.connected(m_currentFd)) {//пользователь зарегистрирован?
 		errorNotRegistered();
 		return true;
@@ -1088,6 +1087,10 @@ void IrcServer::run() {
 				break; case DISCONNECTED:
 					Console::log("Disconnected: ", m_users[it->fd], Console::LOG);
 					m_users.unlog(it->fd);
+					for (std::map<std::string, Channel>::iterator it = m_channels.begin(); it != m_channels.end(); ++it) {
+						Channel& channel = it->second;
+						channel.remove(m_currentFd);
+					}
 				break; case MESSAGE_RECIEVED:
 					setCurrent(*it);
 					if (handleCommand(it->message))
@@ -1193,6 +1196,7 @@ void IrcServer::bot(const char *str) {
 	else
 		bot_unknown_command();
 }
+
 void IrcServer::bot_unknown_command() {
 	int rnd = std::rand() & 15;
 	switch(rnd) {
@@ -1205,7 +1209,7 @@ void IrcServer::bot_unknown_command() {
 					"это еще не значит, что она бесполезна."
 					" Т. Эдисон.");
 		break; case 3:
-			appendMessage("");
+			appendMessage("Что ты имел ввиду?");
 		break; case 4:
 			appendMessage("Всякий, кто употребляет выражение: "
 				"«легче, чем отнять конфету у ребенка»,"
@@ -1230,11 +1234,11 @@ void IrcServer::bot_unknown_command() {
 		break; case 12:
 			appendMessage("Когда намечается кризис, не трать зря энергию на желание обладать сведениями или умениями, которыми ты не обладаешь. Окапывайся и управляйся как можешь с тем, что у тебя есть.");
 		break; case 13:
-			appendMessage("");
+			appendMessage("Моя твоя не понимает");
 		break; case 14:
-			appendMessage("");
+			appendMessage("Звонок для учителя");
 		break; case 15:
-			appendMessage("");
+			appendMessage("Встань и иди");
 	}
 }
 
@@ -1294,24 +1298,28 @@ bool IrcServer::bot_die(const char*& str) {
 				"Всякого, кто держит такое оружие, следует "
 				"проткнуть насквозь. – Его и проткнули. – Верно.");
 		break; case 6:
+			appendMessage("Наступает минута прощания,"
+				"Ты глядишь мне тревожно в глаза,"
+				"И ловлю я родное дыхание,"
+				"А вдали уже дышит гроза.");
 		break; case 7:
-			appendMessage("");
+			appendMessage("I'll be back");
 		break; case 8:
-			appendMessage("");
+			appendMessage("Why do you want to kill me?");
 		break; case 9:
-			appendMessage("");
+			appendMessage("Который час? Мне пора идти =)");
 		break; case 10:
-			appendMessage("");
+			appendMessage("bb gl");
 		break; case 11:
-			appendMessage("");
+			appendMessage("Досвидос");
 		break; case 12:
-			appendMessage("");
+			appendMessage("ПОКА ПОКА");
 		break; case 13:
-			appendMessage("");
+			appendMessage("Die, ****** ****** die, die, die");
 		break; case 14:
-			appendMessage("");
+			appendMessage("Never give up. Fup, fup.");
 		break; case 15:
-			appendMessage("");
+			appendMessage("I'm loving it...");
 	}
 	return true;
 }
@@ -1331,29 +1339,29 @@ bool IrcServer::bot_hello(const char*& str) {
 				"практике, считающейся сомнительной по "
 				"стандартным меркам любого из измерений.");
 		break; case 4:
-			appendMessage("");
+			appendMessage("go dota");
 		break; case 5:
-			appendMessage("");
+			appendMessage("Coffee and croissant?");
 		break; case 6:
-			appendMessage("");
+			appendMessage("Здравствуйте");
 		break; case 7:
-			appendMessage("");
+			appendMessage("Hello world!");
 		break; case 8:
-			appendMessage("");
+			appendMessage("Привет, Малыш! Давай шалить?");
 		break; case 9:
-			appendMessage("");
+			appendMessage("Хай, я роБот");
 		break; case 10:
-			appendMessage("");
+			appendMessage("Заяц, Волк...");
 		break; case 11:
-			appendMessage("");
+			appendMessage("Счастье, Веселье, Улыбки, Доброта, Любовь - это всё тебе!");
 		break; case 12:
-			appendMessage("");
+			appendMessage("У Курского вокзала стою я молодой...");
 		break; case 13:
-			appendMessage("");
+			appendMessage("WAZAAAA!!");
 		break; case 14:
-			appendMessage("");
+			appendMessage("Что новый хозяин надо?");
 		break; case 15:
-			appendMessage("");
+			appendMessage("Это только начало, кожаный мешок");
 	}
 	return true;
 }
@@ -1395,7 +1403,7 @@ bool IrcServer::bot_help(const char*& str) {
 		break; case 14:
 			appendMessage("Wubba lubba dub dub.");
 		break; case 15:
-			appendMessage("");
+			appendMessage("Не выходи из комнаты, не совершай ошибку...");
 	}
 	appendMessage("\r\n");
 	return true;
@@ -1440,7 +1448,7 @@ bool IrcServer::bot_roll(const char*& str) {
 		break; case -1: {
 			m_message += "Генераторы: color";
 			for (const char **it = rollers + 1
-				, **end = it + sizeof rollers / sizeof *rollers
+				, **end = rollers + sizeof rollers / sizeof *rollers
 				; it != end; ++it) {
 				m_message += ", ";
 				m_message += *it;
