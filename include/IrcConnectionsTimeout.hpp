@@ -4,7 +4,7 @@
 #include <sys/time.h>
 #include "IrcConnectionTimeout.hpp"
 
-#define DISCONNECT_DELAY	1000 * 10
+#define DISCONNECT_DELAY	1000 * 2
 #define PING_DELAY			1000 * 3
 
 namespace ft_irc {

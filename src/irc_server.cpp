@@ -1102,6 +1102,8 @@ void IrcServer::terminateConnection() {
 }
 inline
 void IrcServer::terminateConnection(fd_t fd) {
+	m_timer.removeConnections(fd);
+	m_timedout_counters[fd] = 0;
 	Console::log("Disconnected ", m_users[fd], Console::LOG);
 	Server::terminateConnection(fd);
 	m_users.unlog(fd);
@@ -1117,11 +1119,29 @@ void IrcServer::run() {
 		const std::vector<message_type>& messages = Server::getMessage();
 		for (iterator it = messages.begin(), end = messages.end()
 				; it != end; ++it) {
+			for (int it = m_timer.isSomeoneTimedOut();it != -1
+					; it = m_timer.isSomeoneTimedOut()) {
+				Console::log("timeout ", it);
+				int &i = m_timedout_counters[it];
+				if (i > 2) {
+					terminateConnection(i);
+					i = 0;
+				}
+				else {
+					++i;
+					sendPing(i);
+				}
+			}
 			switch (it->event) {
 				break; case DISCONNECTED:
+					m_timer.removeConnections(it->fd);
 					Console::log("Disconnected: ", m_users[it->fd], Console::LOG);
 					m_users.unlog(it->fd);
 				break; case MESSAGE_RECIEVED:
+					if (m_timedout_counters.size() < (size_t)it->fd)
+						m_timedout_counters.resize(it->fd << 1);
+					if (!m_timedout_counters[it->fd])
+						m_timer.updateTimeout(it->fd);
 					setCurrent(*it);
 					if (handleCommand(it->message))
 						it->message.clear();
@@ -1464,6 +1484,7 @@ bool IrcServer::bot_roll(const char*& str) {
 	static char const *rollers[] = {
 		"color\r",
 		"continents\r",
+		"coordinates\r",
 		"countries\r",
 		"deck\r",
 		"die\r",
@@ -1479,7 +1500,7 @@ bool IrcServer::bot_roll(const char*& str) {
 	Console::log(rnd);
 	switch(rnd) {
 		break; case -1: {
-			m_message += "Генераторы: color, continents, countries, deck, die, religion, time..";
+			m_message += "Генераторы: color, continents, countries, coordinates, deck, die, religion, time..";
 		}
 		break; case 0: {
 			roll = (std::rand() & 0xFFFF)
@@ -1497,28 +1518,7 @@ bool IrcServer::bot_roll(const char*& str) {
 			Console::log(roll);
 			m_message += continents[roll];
 			m_message += " затонула.";
-		break; case 2:
-			roll = std::rand() % 212;
-			m_message += "Я думаю, тебе здесь нечего делать;"
-				" срочно бросай всё и едь в другое место! ";
-			m_message += countries[roll];
-			m_message += " ждёт тебя!";
-		break; case 3:
-			roll = std::rand() % 52;
-			appendMessage("Загадай карту. Ммм. "
-					"Ты выбрал ");
-			m_message += deck[roll];
-			m_message += ".";
-		break; case 4:
-			roll = std::rand() & 7;
-			m_message += "Костяшка остановилась на ";
-			m_message += roll + '1';
-			m_message += ".";
-		break; case 5:
-			appendMessage("Ты принял ");
-			appendMessage(religions[std::rand() % 13]);
-			m_message += ".";
-		break; case 6: {
+		break; case 2: {
 			std::string d;
 			std::stringstream s;
 			float r1 = static_cast<float>(
@@ -1534,6 +1534,27 @@ bool IrcServer::bot_roll(const char*& str) {
 			s >> d;
 			m_message += d;
 		}
+		break; case 3:
+			roll = std::rand() % 212;
+			m_message += "Я думаю, тебе здесь нечего делать;"
+				" срочно бросай всё и едь в другое место! ";
+			m_message += countries[roll];
+			m_message += " ждёт тебя!";
+		break; case 4:
+			roll = std::rand() % 52;
+			appendMessage("Загадай карту. Ммм. "
+					"Ты выбрал ");
+			m_message += deck[roll];
+			m_message += ".";
+		break; case 5:
+			roll = std::rand() & 7;
+			m_message += "Костяшка остановилась на ";
+			m_message += roll + '1';
+			m_message += ".";
+		break; case 6:
+			appendMessage("Ты принял ");
+			appendMessage(religions[std::rand() % 13]);
+			m_message += ".";
 		break; case 7: {
 			std::string d;
 			std::stringstream s;
@@ -1687,6 +1708,11 @@ bool IrcServer::checkChannelEmpty(const std::string& name, Channel& channel) {
 
 void IrcServer::makeOp(Channel& channel, int id) {
 	channel.op(id);
+}
+
+void IrcServer::sendPing(fd_t fd) {
+	appendMessageBegin(" PING", fd);
+	appendMessage("\r\n");
 }
 
 }
