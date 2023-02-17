@@ -41,6 +41,8 @@ void ft_irc::IrcConnectionsTimeout::update(int fd)
 
 unsigned int ft_irc::IrcConnectionsTimeout::getTime()
 {
-    gettimeofday(&time, NULL);
-    unsigned int out = time.tv_sec * 1000 + time.tv_usec / 1000;
+    // gettimeofday(&time, NULL);
+    // unsigned int out = time.tv_sec * 1000 + time.tv_usec / 1000;
+    std::clock_t time = std::clock() * 1000 / CLOCKS_PER_SEC;
+    return time;
 }

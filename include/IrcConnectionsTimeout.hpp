@@ -19,7 +19,6 @@ class IrcConnectionsTimeout {
 		void update(int fd);
 	private:
 		unsigned int getTime();
-		struct timeval time;
 		unsigned int priv_update = 0;
 		std::map<int, unsigned int> mp;
 };
