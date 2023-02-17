@@ -700,15 +700,18 @@ bool IrcServer::pass(const char*& arguments) {
 bool IrcServer::ping(const char*& arguments) {
 	std::string token = extract_argument(arguments);
 	appendMessageBegin(" PONG");
-	appendMessageBegin(token);
+	appendMessage(token);
 	return true;
 }
 //PONG <server2> [<server2>]
 bool IrcServer::pong(const char*& arguments) {
 	(void)arguments;
-	// std::string token = extract_argument(arguments);
-	// if (token != IRC_SERVER_NAME)
-	// 	return true;
+	std::string token = extract_argument(arguments);
+	if (token != IRC_SERVER_NAME)
+		return true;
+	// m_timer m_timedout_counters
+	m_timedout_counters[m_currentFd] = 0;
+	m_timer.updateTimeout(m_currentFd);
 	return true;
 }
 
@@ -1113,23 +1116,26 @@ void IrcServer::run() {
 	for (;;) {
 		typedef std::vector<message_type>::const_iterator iterator;
 		const std::vector<message_type>& messages = Server::getMessage();
-		for (iterator it = messages.begin(), end = messages.end()
-				; it != end; ++it) {
-			for (int it = m_timer.isSomeoneTimedOut();it != -1
+		for (int it = m_timer.isSomeoneTimedOut();it != -1
 					; it = m_timer.isSomeoneTimedOut()) {
 				Console::log("timeout ", it);
 				int &i = m_timedout_counters[it];
 				if (i > 2) {
-					terminateConnection(i);
+					terminateConnection(it);
 					i = 0;
 				}
 				else {
 					++i;
-					sendPing(i);
+					m_timer.updateTimeout(it);
+					sendPing(it);
+					sendMessage(it);
 				}
 			}
+		for (iterator it = messages.begin(), end = messages.end()
+				; it != end; ++it) {
 			switch (it->event) {
 				break; case DISCONNECTED:
+					m_timedout_counters[it->fd] = 0;
 					m_timer.removeConnections(it->fd);
 					Console::log("Disconnected: ", m_users[it->fd], Console::LOG);
 					m_users.unlog(it->fd);
@@ -1716,6 +1722,7 @@ void IrcServer::makeOp(Channel& channel, int id) {
 
 void IrcServer::sendPing(fd_t fd) {
 	appendMessageBegin(" PING", fd);
+	appendMessage(" " IRC_SERVER_NAME);
 	appendMessage("\r\n");
 }
 

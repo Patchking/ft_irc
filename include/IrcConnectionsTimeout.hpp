@@ -1,10 +1,9 @@
 #ifndef IRCCONNECTIONSTIMEOUT_HPP
 #define IRCCONNECTIONSTIMEOUT_HPP
 #include <map>
-#include <sys/time.h>
-#include "IrcConnectionTimeout.hpp"
+#include <ctime>
 
-#define DISCONNECT_DELAY	1000 * 2
+#define DISCONNECT_DELAY	1000 * 1
 #define PING_DELAY			1000 * 3
 
 namespace ft_irc {
