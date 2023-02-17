@@ -168,6 +168,10 @@ class IrcUsers {
 			m_users[id].mode = User::DISCONNECTED;
 		}
 
+		void setNick(const std::string& str, int fd) {
+			m_usersMap.insert(std::pair<std::string, int>(str, fd));
+		}
+
 	private:
 		void ignore(PipelineUser& pipeling) {
 			(void)pipeling;
@@ -218,15 +222,15 @@ class IrcUsers {
 			m_logStatus = SUCCESS;
 		}
 
-		void ensureUsersSize(int size) {
-			if (size < 0)
+		void ensureUsersSize(int index) {
+			if (index < 0)
 				return;
-			++size;
+			size_t size = index + 2;
 			if (m_users.size() <= static_cast<size_t>(size)) {
-				size_t new_size = m_users.size() << 1;
-				new_size = new_size > static_cast<size_t>(size)
-					? new_size : size;
-				m_users.resize(new_size);
+				if (size > m_users.size())
+					m_users.resize(size << 1);
+				else
+					m_users.resize(m_users.size() << 1);
 			}
 		}
 
