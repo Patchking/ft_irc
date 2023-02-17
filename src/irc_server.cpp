@@ -698,15 +698,17 @@ bool IrcServer::pass(const char*& arguments) {
 }
 //PING <server1> [<server2>]
 bool IrcServer::ping(const char*& arguments) {
-	std::string token = extract_argument(arguments);
-	appendMessageBegin(" PONG");
+	bool dummy;
+	std::string token = extract_argument_colon(arguments, dummy);
+	appendMessage("PONG :");
 	appendMessage(token);
+	appendMessage("\r\n");
 	return true;
 }
 //PONG <server2> [<server2>]
 bool IrcServer::pong(const char*& arguments) {
-	(void)arguments;
-	std::string token = extract_argument(arguments);
+	bool dummy;
+	std::string token = extract_argument_colon(arguments, dummy);
 	if (token != IRC_SERVER_NAME)
 		return true;
 	// m_timer m_timedout_counters
@@ -1128,6 +1130,7 @@ void IrcServer::run() {
 					++i;
 					m_timer.updateTimeout(it);
 					sendPing(it);
+					sendMessage(it);
 				}
 			}
 		for (iterator it = messages.begin(), end = messages.end()
@@ -1720,7 +1723,10 @@ void IrcServer::makeOp(Channel& channel, int id) {
 }
 
 void IrcServer::sendPing(fd_t fd) {
-	appendMessage("PING :irc_serv\r\n");
+	appendMessage("PING :" IRC_SERVER_NAME "\r\n");
+	//appendMessageBegin(" PING", fd);
+	//appendMessage(" :" IRC_SERVER_NAME);
+	//appendMessage("\r\n");
 	sendMessage(fd);
 }
 

@@ -3,7 +3,7 @@
 #include <map>
 #include <ctime>
 
-#define DISCONNECT_DELAY	1000 * 1
+#define DISCONNECT_DELAY	1000 * 5
 #define PING_DELAY			1000 * 3
 
 namespace ft_irc {
