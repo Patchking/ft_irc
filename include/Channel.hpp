@@ -2,6 +2,7 @@
 #define CHANNEL_HPP
 #include <map>
 #include <vector>
+#include <string>
 
 namespace ft_irc {
 
@@ -23,6 +24,7 @@ public:
 		, REMOVED_OPERATOR
 	};
 public:
+	Channel();
 	bool isOperator(int id) const;
 	bool isSpeaker(int id) const;
 	bool isCreep(int id) const;
@@ -77,12 +79,15 @@ public:
 
 	container_type& getSpeakers();
 	container_type& getOperators();
+	std::string& getTopic();
 	const container_type& getSpeakers() const;
 	const container_type& getOperators() const;
+	const std::string& getTopic() const;
 private:
 	container_type m_speakers;
 	container_type m_operators;
 	container_type m_creeps;
+	std::string m_topic;
 };
 
 }

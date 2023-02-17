@@ -23,7 +23,8 @@ class IrcServer : public Server {
 	};*/
 
 	typedef std::map<std::string, Channel> channels_type;
-	typedef bool (IrcServer::*const command_function_type)(const char*&);
+	typedef bool (IrcServer::*const command_function_type)
+		(const char*&);
 	//typedef Command command_type;
 	typedef Server::message_type message_type;
 
@@ -78,15 +79,26 @@ class IrcServer : public Server {
 	bool whowas(const char*& arguments);
 
 	public:
+	void run();
+
+	private:
 	bool handleCommand(const std::string& message_string);
 	void terminateConnection();
 	void terminateConnection(fd_t fd);
 	void setCurrent(const message_type& message);
-	void run();
+	void who_channel_operators(int fd);
+	void who_channel_speakers(int fd);
+	void who_channel(const std::string& name, const Channel& channel);
+	void names(const std::string& name, Channel& channel);
 
+
+	static const char *const bot_commands[4];
 	static const char *const commands[46];
 	static const command_function_type command_functions[46];
-	private:
+	static const command_function_type bot_command_functions[4];
+	void topic(const std::string& name, const Channel& channel);
+	void joinMessage(const std::string& name
+			, Channel &channel, bool notify_all = true);
 	User& currentUser();
 
 	void appendMessage(const char *message);
@@ -99,20 +111,25 @@ class IrcServer : public Server {
 	void appendMessage(const User& user);
 	void appendMessageSelf();
 	void appendMessageNick(const User&);
+	void appendMessageFull(const User& user);
 	void endMessage();
 	void appendMessageBegin(const char *code, int fd);
 	void appendMessageBegin(const char *code);
+	void appendMessageBot();
 	void errorNeedMoreParams();
 	void errorNotRegistered();
 	void errorBannedFromChan();
 	void errorNoSuchChannel(const std::string&);
 	void notification(const char *rpl, std::string str);
 	void messageInChannel(const Channel& channel);
+
+	void appendMessageUserOperator(int fd);
+	void appendMessageUserSpeaker(int fd);
 	void sendMsgToUser(int fd);
 	void sendMsgToConsole(int fd);
 	bool isInChannel(const Channel& channel);
 	bool isChannelOperator(const Channel& channel);
-	bool checkChannelEmpty(Channel&);
+	bool checkChannelEmpty(const std::string& name, Channel& channel);
 	void makeOp(Channel& channel, int id);
 
 	void greet();
@@ -122,10 +139,19 @@ class IrcServer : public Server {
 	void motd_start();
 	void motd();
 	void motd_end();
+
+	void bot(const char *str);
+
+	void bot_unknown_command();
+	bool bot_die(const char *&);
+	bool bot_hello(const char *&);
+	bool bot_help(const char *&);
+	bool bot_roll(const char *&);
 	private:
 	IrcUsers m_users;
 	channels_type m_channels;
 	std::string m_message;
+	std::string m_temp_string;
 	fd_t m_currentFd;
 };
 

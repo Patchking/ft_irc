@@ -1,5 +1,7 @@
 #include "IrcServer.hpp"
 #include <IrcReplies.hpp>
+#include <cstdlib>
+#include <sstream>
 
 namespace ft_irc {
 
@@ -135,6 +137,20 @@ const char *const IrcServer::commands[46] = {
 			, "WALLOPS", "WHO", "WHOIS", "WHOWAS"
 };
 
+const char *const IrcServer::bot_commands[4] = {
+	"die",
+	"hello",
+	"help",
+	"roll"
+};
+
+const IrcServer::command_function_type IrcServer::bot_command_functions[4] = {
+	&IrcServer::bot_die,
+	&IrcServer::bot_hello,
+	&IrcServer::bot_help,
+	&IrcServer::bot_roll,
+};
+
 const IrcServer::command_function_type IrcServer::command_functions[46] = {
 		&IrcServer::admin, &IrcServer::away, &IrcServer::connect
 		, &IrcServer::die, &IrcServer::error, &IrcServer::info
@@ -227,79 +243,138 @@ bool IrcServer::ison(const char*& arguments) {
 	return true;
 }
 
-bool	isValidChannelName(const std::string &name)
+bool	isValidChannelName(std::string &name)
 {
-	if (name[0] != '#' && name[0] != '&')
-		return false;
+	if (name[0] == '#')
+		name.erase(0, 1);
 	for (size_t i = 1; i < name.size(); i++)
 	{
-		if (name[i] == ' ' || name[i] == 7 || name[i] == 0 \
-			|| name[i] == 13 || name[i] == 10 || name[i] == ',')
+		if (name[i] == '\a' || name[i] == ',')
 			return false;
 	}
 	return true;
 }
 
-void IrcServer::appendMsg(int fd) {
-	if () {// если это юзер
-
-	}
-	else {// если это оператор
-		
-	}
-}
-
 //JOIN <channels>
 bool IrcServer::join(const char*& arguments) {
-	if (!m_users.connected(m_currentFd)) {//пользователь зарегистрирован?
+	if (!m_users.connected(m_currentFd)) {
 		errorNotRegistered();
 		return true;
 	}
 	std::string channel_name = extract_argument(arguments);
-	std::string channel_name_after_space = extract_argument(arguments);//если есть пробел в названии канала
 	if (channel_name.empty()) {
 		errorNeedMoreParams();
 		return true;
 	}
-	if (!isValidChannelName(channel_name) || !channel_name_after_space.empty()) {
-		appendMessageBegin(IRC_ERR_BADCHANMASK);
-		appendMessage(" : Bad channel name\r\n");
+	if ('#' == channel_name[0])
+		channel_name.erase(0, 1);
+	if (channel_name.empty()) {
+		errorNeedMoreParams();
 		return true;
-	}
+	}/*
+	if (!isValidChannelName(channel_name)) {
+		appendMessageBegin(IRC_ERR_BADCHANMASK);
+		appendMessage(" :Bad channel name\r\n");
+		return true;
+	}*/
 	channels_type::iterator iterator = m_channels.find(channel_name);
-	if (iterator == m_channels.end()) {// канала ещё нет
+	if (iterator == m_channels.end()) {
+		Console::log("channel ", channel_name);
 		channels_type::iterator iterator = m_channels.insert(
 			std::pair<std::string, Channel>
 			(channel_name, Channel())
 		).first;
 		iterator->second.addOperator(m_currentFd);
-		notification(IRC_RPL_NAMREPLY, " " +  m_users[m_currentFd].nickname + " is joining the channel " + channel_name + "\r\n");
+		joinMessage(iterator->first, iterator->second);
+	}
+	else if (iterator->second.isOperator(m_currentFd)
+			|| iterator->second.isSpeaker(m_currentFd)) {
+		joinMessage(iterator->first, iterator->second, false);
 	}
 	else {// канал существует
-		if (iterator->second.isCreep(m_currentFd)) {// пользователь забанен
+		Channel& channel = iterator->second;
+		if (channel.isCreep(m_currentFd)) {
 			errorBannedFromChan();
 			return true;
 		}
-		else if (iterator->second.isSpeaker(m_currentFd) || iterator->second.isOperator(m_currentFd)){// юзер уже в канале
-			notification(IRC_RPL_NAMREPLY, " " + m_users[m_currentFd].nickname + " is already in the channel " + channel_name + "\r\n");
-			return true;
-		}
 		else {// юзер не забанен
-			iterator->second.addSpeaker(m_currentFd);
-			notification(IRC_RPL_NAMREPLY, " " + m_users[m_currentFd].nickname + " is joining the channel " + channel_name + "\r\n");//сообщение, то что он добавлен в канал +
-			appendMessageBegin(IRC_RPL_NAMREPLY);
-			m_message += " = " + channel_name + " :";
-			// разослал всем в канале сообщение о добавлении нового пользователя
-			channels_type::iterator iterator = m_channels.find(channel_name);
-			Channel& channel = iterator->second;
-			messageInChannel(channel);
-			channel.for_each_operator(*this, &IrcServer::sendMsgToConsole);
-			channel.for_each_speaker(*this, &IrcServer::sendMsgToConsole);
+			channel.addSpeaker(m_currentFd);
+			joinMessage(iterator->first, iterator->second);
 			return true;
 		}
 	}
 	return true;
 }
+
+void IrcServer::joinMessage(const std::string& name
+		, Channel &channel, bool notify_all) {
+	sendMessage();
+	appendMessage(":");
+	appendMessage(m_users[m_currentFd]);
+	appendMessage(" JOIN #");
+	appendMessage(name);
+	appendMessage("\r\n");
+	if (notify_all)
+		messageInChannel(channel);
+	sendMessage();
+	topic(name, channel);
+	names(name, channel);
+	sendMessage();
+}
+
+void IrcServer::topic(const std::string& name, const Channel& channel) {
+	appendMessageBegin(IRC_RPL_TOPIC);
+	appendMessage(" #");
+	appendMessage(name);
+	appendMessage(" :");
+	appendMessage(channel.getTopic());
+	appendMessage("\r\n");
+}
+
+void IrcServer::names(const std::string& name, Channel& channel) {
+	m_temp_string = name;
+	appendMessageBegin(IRC_RPL_NAMREPLY);
+	appendMessage(" = ");
+	appendMessage(name);
+	appendMessage(" :");
+	channel.for_each_operator(*this
+			, &IrcServer::appendMessageUserOperator);
+	channel.for_each_speaker(*this
+			, &IrcServer::appendMessageUserSpeaker);
+	appendMessage("\r\n");
+	appendMessageBegin(IRC_RPL_ENDOFNAMES);
+	appendMessage(" #");
+	appendMessage(name);
+	appendMessage(" :End of /NAMES list\r\n");
+}
+
+void IrcServer::appendMessageUserSpeaker(int fd) {
+	if (m_message.size() > 500) {
+		appendMessage("\r\n");
+		sendMessage();
+		appendMessageBegin(IRC_RPL_NAMREPLY);
+		appendMessage(" = ");
+		appendMessage(m_temp_string);
+		appendMessage(" :");
+	}
+	appendMessage(m_users[fd].nickname);
+	appendMessage(" ");
+}
+
+void IrcServer::appendMessageUserOperator(int fd) {
+	if (m_message.size() > 500) {
+		appendMessage("\r\n");
+		sendMessage();
+		appendMessageBegin(IRC_RPL_NAMREPLY);
+		appendMessage(" = ");
+		appendMessage(m_temp_string);
+		appendMessage(" :");
+	}
+	appendMessage("@");
+	appendMessage(m_users[fd].nickname);
+	appendMessage(" ");
+}
+
 //KICK <channel> <client> [<message>]
 bool IrcServer::kick(const char*& arguments) {
 	if (!m_users.connected(m_currentFd)) {
@@ -353,7 +428,7 @@ bool IrcServer::kick(const char*& arguments) {
 		sendMessage(user_id);
 	break; default:;
 	}
-	checkChannelEmpty(channel);
+	checkChannelEmpty(channel_name, channel);
 	return true;
 }
 //KILL <nickname> <comment>
@@ -369,7 +444,7 @@ bool IrcServer::kill(const char*& arguments) {
 		errorNeedMoreParams();
 		return true;
 		// проверка сущ юзера
-		// проверка на опрератора 
+		// проверка на опрератора
 	}
 
 	return true;
@@ -426,7 +501,25 @@ bool IrcServer::names(const char*& arguments) {
 		errorNotRegistered();
 		return true;
 	}
-	(void)arguments;
+	std::string channel_name = extract_argument(arguments);
+	if (channel_name.empty()) {
+		errorNeedMoreParams();
+		return true;
+	}
+	if ('#' == channel_name[0])
+		channel_name.erase(0, 1);
+	if (channel_name.empty()) {
+		errorNeedMoreParams();
+		return true;
+	}
+	channels_type::iterator iterator = m_channels.find(channel_name);
+	if (iterator == m_channels.end()) {
+		errorNoSuchChannel(channel_name);
+		return true;
+	}
+	sendMessage();
+	names(channel_name, iterator->second);
+	sendMessage();
 	return true;
 }
 //NICK <nickname> [<hopcount>] (RFC 1459)
@@ -460,6 +553,9 @@ bool IrcServer::notice(const char*& arguments) {
 	}
 	bool is_colon;
 	if (nick[0] == '#'/* || nick[0] == '&'*/) {//сообщение в канал
+		nick.erase(0, 1);
+		if (nick.empty())
+			return true;
 		std::string message
 			= extract_argument_colon(arguments, is_colon);
 		channels_type::iterator iterator = m_channels.find(nick);
@@ -520,25 +616,37 @@ bool IrcServer::part(const char*& arguments) {
 		return true;
 	}
 	std::string channel_name = extract_argument(arguments);
-	std::string channel_name_after_space = extract_argument(arguments);//если есть пробел в названии канала
 	if (channel_name.empty()) {
 		errorNeedMoreParams();
 		return true;
 	}
-	if (!isValidChannelName(channel_name) || !channel_name_after_space.empty()) {
-		appendMessageBegin(IRC_ERR_BADCHANMASK);
-		appendMessage(" : Bad channel name\r\n");
+	if ('#' == channel_name[0])
+		channel_name.erase(0, 1);
+	if (channel_name.empty()) {
+		errorNeedMoreParams();
 		return true;
 	}
 	else {
 		channels_type::iterator iterator = m_channels.find(channel_name);
-		iterator->second.remove(m_currentFd);
-		// notification(IRC_RPL_NAMREPLY, " " + m_users[m_currentFd].nickname + " leave channel " + channel_name + "\r\n");
-		appendMessage(m_users[m_currentFd].nickname + " leave channel " + channel_name + "\r\n");//сообщение, то что он покинул канал
-		// разослал всем в канале сообщение об удалении пользователя
+		if (iterator == m_channels.end()) {
+			errorNoSuchChannel(channel_name);
+			return true;
+		}
 		Channel& channel = iterator->second;
+		if (channel.remove(m_currentFd) == Channel::FAIL_NOT_JOINED) {
+			appendMessageBegin(IRC_ERR_NOTONCHANNEL);
+			appendMessage(" #");
+			appendMessage(channel_name);
+			appendMessage(" :You're not on that channel\r\n");
+		}
+		checkChannelEmpty(channel_name, channel);
+		emptyMessage();
+		appendMessage(":");
+		appendMessage(m_users[m_currentFd]);
+		appendMessage(" PART #");
+		appendMessage(channel_name);
+		appendMessage("\r\n");
 		messageInChannel(channel);
-		return true;
 	}
 	return true;
 }
@@ -582,8 +690,12 @@ bool IrcServer::pong(const char*& arguments) {
 }
 
 void IrcServer::sendMsgToUser(int fd) {
-	if (m_currentFd != fd)// сейчас отправитель получает сообщение тоже
+	if (m_currentFd != fd) {
+		Console::log("Sent", m_message, " to ", fd);
 		Server::sendMessage(fd, m_message);
+	}
+	else
+		Console::log("NOT Sent to ", fd);
 }
 
 void IrcServer::messageInChannel(const Channel& channel) {
@@ -603,7 +715,14 @@ bool IrcServer::privmsg(const char*& arguments) {
 		return true;
 	}
 	bool is_colon;
-	if (nick[0] == '#'/* || nick[0] == '&'*/) {//сообщение в канал
+	if (nick[0] == '#'/* || nick[0] == '&'*/) {
+		nick.erase(0, 1);
+		if (nick.empty()) {
+			appendMessageBegin(IRC_ERR_NORECIPIENT);
+			appendMessage(" :No recipient.\r\n");
+			return true;
+		}
+		Console::log("channel ", nick, " id: ", m_currentFd);
 		std::string message
 			= extract_argument_colon(arguments, is_colon);
 		channels_type::iterator iterator = m_channels.find(nick);
@@ -617,7 +736,7 @@ bool IrcServer::privmsg(const char*& arguments) {
 		sendMessage();
 		appendMessage(":");
 		appendMessage(m_users[m_currentFd]);
-		appendMessage(" PRIVMSG ");
+		appendMessage(" PRIVMSG #");
 		appendMessage(nick);
 		appendMessage(" :");
 		appendMessage(message);
@@ -837,10 +956,70 @@ bool IrcServer::wallops(const char*& arguments) {
 	return true;
 }
 //WHO [<name> ["o"]]
+
+//"<client> <channel> <username> <host>"
+//"<server> <nick> <flags> :<hopcount> <realname>"
+//
+//:calcium.libera.chat 352 dan
+//#ircv3 ~emersion sourcehut/staff/emersion
+//calcium.libera.chat emersion H :1 Simon Ser
+//
+//:calcium.libera.chat 352 dan #ircv3
+//~val limnoria/val calcium.libera.chat val H :1 Val
+//
+//:calcium.libera.chat 315 dan #ircv3 :End of WHO list
+//
+void IrcServer::who_channel_operators(int fd) {
+	if (m_message.size() > 450) {
+		sendMessage();
+	}
+	appendMessageBegin(IRC_RPL_WHOREPLY);
+	appendMessage(m_temp_string);
+	appendMessageFull(m_users[fd]);
+	appendMessage(" H+o ");
+	appendMessage(":1 ");
+	appendMessage(m_users[fd].realname);
+	appendMessage("\r\n");
+}
+void IrcServer::who_channel_speakers(int fd) {
+	if (m_message.size() > 400) {
+		sendMessage();
+	}
+	appendMessageBegin(IRC_RPL_WHOREPLY);
+	appendMessage(m_temp_string);
+	appendMessageFull(m_users[fd]);
+	appendMessage(" H ");
+	appendMessage(":1 ");
+	appendMessage(m_users[fd].realname);
+	appendMessage("\r\n");
+}
+
+void IrcServer::who_channel(const std::string& name
+		, const Channel& channel) {
+	m_temp_string = " #";
+	m_temp_string += name;
+	channel.for_each_operator(*this, &IrcServer::who_channel_operators);
+	channel.for_each_speaker(*this, &IrcServer::who_channel_speakers);
+	appendMessageBegin(IRC_RPL_ENDOFWHO);
+	appendMessage(m_temp_string);
+	appendMessage(" :End of WHO list\r\n");
+}
+
 bool IrcServer::who(const char*& arguments) {
 	if (!m_users.connected(m_currentFd)) {
 		errorNotRegistered();
 		return true;
+	}
+	std::string mask = extract_argument(arguments);
+	if (mask.empty())
+		return true;
+	if (mask[0] == '#') {
+		mask.erase(0, 1);
+		channels_type::iterator
+			iterator = m_channels.find(mask);
+		if (iterator == m_channels.end())
+			return true;
+		who_channel(iterator->first, iterator->second);
 	}
 	(void)arguments;
 	return true;
@@ -935,16 +1114,13 @@ void IrcServer::emptyMessage() {
 }
 
 bool IrcServer::sendMessage() {
-	if (m_message.empty())
-		return false;
-	Server::sendMessage(m_currentFd, m_message.c_str());
-	emptyMessage();
-	return true;
+	return sendMessage(m_currentFd);
 }
 
 bool IrcServer::sendMessage(fd_t fd) {
 	if (m_message.empty())
 		return false;
+	Console::log("sending to ", m_currentFd, " IRC");
 	Server::sendMessage(fd, m_message.c_str());
 	emptyMessage();
 	return true;
@@ -978,6 +1154,17 @@ void IrcServer::appendMessage(const User& user) {
 	}
 }
 
+void IrcServer::appendMessageFull(const User& user) {
+	appendMessage(" ~");
+	appendMessage(user.username);
+	appendMessage(" ");
+	appendMessage(user.hostname);
+	appendMessage(" ");
+	appendMessage(user.servername);
+	appendMessage(" ");
+	appendMessage(user.nickname);
+}
+
 void IrcServer::endMessage() {
 	appendMessage("\n");
 }
@@ -995,6 +1182,348 @@ void IrcServer::motd() {
 void IrcServer::motd_end() {
 	appendMessageBegin(IRC_RPL_ENDOFMOTD);
 	appendMessage(" :End of message of the day.\r\n");
+}
+
+void IrcServer::bot(const char *str) {
+	std::ptrdiff_t cid = binary_search(commands, 46, str);
+	if (-1 != cid) {
+		skip_nonspace(str);
+		(this->*command_functions[cid])(str);
+	}
+	else
+		bot_unknown_command();
+}
+void IrcServer::bot_unknown_command() {
+	int rnd = std::rand() & 15;
+	switch(rnd) {
+		case 0:
+		break; case 1:
+			appendMessage("Да ладна.");
+		break; case 2:
+			appendMessage("Если какая-то штука не делает того,"
+					" что вы предназначили ей делать, "
+					"это еще не значит, что она бесполезна."
+					" Т. Эдисон.");
+		break; case 3:
+			appendMessage("");
+		break; case 4:
+			appendMessage("Всякий, кто употребляет выражение: "
+				"«легче, чем отнять конфету у ребенка»,"
+				" никогда не пробовал отнять конфету у ребенка.");
+		break; case 5:
+			appendMessage("Подумай минутку"
+					", даже если это болезненно для тебя.");
+		break; case 6:
+			appendMessage("Одна из радостей путешествия "
+					"– это возможность посетить новые города "
+					"и познакомиться с новыми людьми. Чингисхан.");
+		break; case 7:
+			appendMessage("- Ладно. Ступай, малыш. Только не вздумай прибегать ко мне плакаться, если тебя убьют.");
+		break; case 8:
+			appendMessage("Жужжали мухи вокруг спящей на столе кошки… по крайней мере я хотел бы считать, что она всего лишь спит.");
+		break; case 9:
+			appendMessage("\"Когда сходятся старые друзья, все прочее тускнеет, теряя всякое значение\". Брань, Веселье, Мор и Смерть.");
+		break; case 10:
+			appendMessage("Брак – предприятие пожизненное и требует к себе отношения заботливого и осторожного. Синяя Борода.");
+		break; case 11:
+			appendMessage("Когда намечается кризис, не трать зря энергию на желание обладать сведениями или умениями, которыми ты не обладаешь. Окапывайся и управляйся как можешь с тем, что у тебя есть.");
+		break; case 12:
+			appendMessage("Когда намечается кризис, не трать зря энергию на желание обладать сведениями или умениями, которыми ты не обладаешь. Окапывайся и управляйся как можешь с тем, что у тебя есть.");
+		break; case 13:
+			appendMessage("");
+		break; case 14:
+			appendMessage("");
+		break; case 15:
+			appendMessage("");
+	}
+}
+
+void IrcServer::appendMessageBot() {
+	if (m_message.size() > 272)
+		sendMessage();
+	appendMessage(":bot PRIVMSG ");
+	appendMessageNick(m_users[m_currentFd]);
+	appendMessage(" :");
+}
+
+bool IrcServer::bot_die(const char*& str) {
+	(void)str;
+	int rnd = std::rand() & 15;
+	switch(rnd) {
+		case 0:
+			appendMessage("Сам умри.\r\n");
+		break; case 1:
+			appendMessage("Ублюдок, как у тебя вообще "
+				"наглости хватает писать такое в "
+				"год 435-летия Воронежа.\r\n");
+		break; case 2:
+			appendMessage(
+			"Суре, Артифициал Интелидженс (AI) "
+			"реферс ту машинес тхат аре проограмед "
+			"то преформ таске тхат ординарили "
+			"реекуир хуман интелидженс то "
+			"аккомплиш.");
+			appendMessageBot();
+			appendMessage(
+			"Al цан бе дескрибед ас э "
+			"комплекс сет оф алгоритмс тхат "
+			"енаблес машинес то \"миссион контрол\" "
+			"челенгес, креате нью паттернс, анд лерн "
+			"фром дата.");
+			appendMessageBot();
+			appendMessage(
+			"ААІ цан бе категоризед инто "
+			"дво киндс: симпле рулес-басед системс "
+			"анд комплекс нейралнетворкс. Al гас "
+			"маны ексамплес оф реал-ворлд "
+			"аппликатионс, инклудинг селф-драйвинг "
+			"карс, виртуал ассистантс, фрод "
+			"детектион, и медикал диагносис.");
+		break; case 3:
+			appendMessage(
+				"Чё те дать? Иди сам возьми.");
+		break; case 4:
+			appendMessage("больше сюда не пиши,"
+				" от тебя гавной воняет даже отсюда.."
+				" с телефона чуствую пидарас");
+		break; case 5:
+			appendMessage("Просто не могу поверить. "
+				"Меч с ржавым клинком, скверным балансом и "
+				"липовыми самоцветами в рукоятке и два ножа,"
+				" не точенных с тех пор, как их изготовили. "
+				"Всякого, кто держит такое оружие, следует "
+				"проткнуть насквозь. – Его и проткнули. – Верно.");
+		break; case 6:
+		break; case 7:
+			appendMessage("");
+		break; case 8:
+			appendMessage("");
+		break; case 9:
+			appendMessage("");
+		break; case 10:
+			appendMessage("");
+		break; case 11:
+			appendMessage("");
+		break; case 12:
+			appendMessage("");
+		break; case 13:
+			appendMessage("");
+		break; case 14:
+			appendMessage("");
+		break; case 15:
+			appendMessage("");
+	}
+	return true;
+}
+bool IrcServer::bot_hello(const char*& str) {
+	(void)str;
+	int rnd = std::rand() & 15;
+	switch(rnd) {
+		case 0:
+			appendMessage("Привет от Макаронного Монстра.");
+		break; case 1:
+		break; case 2:
+			appendMessage("Мне следовало б догадаться, что он женат. Я имею в виду, никто не бывает таким молодым и таким лысым, если у него нет жены.");
+		break; case 3:
+			appendMessage(
+				"Мы едим своих врагов, пытаем людей "
+				"для развлечения и предаемся половой "
+				"практике, считающейся сомнительной по "
+				"стандартным меркам любого из измерений.");
+		break; case 4:
+			appendMessage("");
+		break; case 5:
+			appendMessage("");
+		break; case 6:
+			appendMessage("");
+		break; case 7:
+			appendMessage("");
+		break; case 8:
+			appendMessage("");
+		break; case 9:
+			appendMessage("");
+		break; case 10:
+			appendMessage("");
+		break; case 11:
+			appendMessage("");
+		break; case 12:
+			appendMessage("");
+		break; case 13:
+			appendMessage("");
+		break; case 14:
+			appendMessage("");
+		break; case 15:
+			appendMessage("");
+	}
+	return true;
+}
+bool IrcServer::bot_help(const char*& str) {
+	int rnd = std::rand() & 15;
+	(void)str;
+	switch(rnd) {
+		case 0:
+		break; case 1:
+			appendMessage("Я знаю 4 слова: "
+					"roll, die, hello, и ещё что-то я забыл.");
+		break; case 2:
+			appendMessage("Когда дела обстоят черней некуда, "
+				"я просто говорю себе: «Выше нос, могло быть и хуже!»"
+				" И, само собой, дела становятся ещё хуже.");
+		break; case 3:
+			appendMessage(
+					"Когда дракон является единственным существом, от которого ты можешь дождаться сочувствия, это кое-что говорит о твоем образе жизни.");
+		break; case 4:
+			appendMessage("Это одно из тех дел, которые лучше всего получаются у меня, — панические вопли.");
+		break; case 5:
+			appendMessage("Помни, что я тебе говорил, денежная работенка не всегда достается самым умелым. Фактически, обычно бывает совсем наоборот.");
+		break; case 6:
+			appendMessage("Разумный поступок тут мог быть только один, и именно так я и поступил. Я потерял сознание.");
+		break; case 7:
+			appendMessage("Я собираюсь обучить тебя магии, даже если это убьет тебя… или меня, что более вероятно!");
+		break; case 8:
+			appendMessage("Нет смысла добиваться внезапности, если мы не собираемся ее использовать.");
+		break; case 9:
+			appendMessage("У победоносных генералов нет протечек в районе глаз - это вредит образу.");
+		break; case 10:
+			appendMessage("Если ты не уверен насчет пищи в измерении, то можешь питаться выпивкой.");
+		break; case 11:
+			appendMessage("Никто не существует по определенной причине, никто ни к чему не привязан, все однажды умрут, пойдем посмотрим телек.");
+		break; case 12:
+			appendMessage("Вся моя жизнь — ложь. Бог мёртв, правительство отстой, День Благодарения празднуется в честь убийства индейцев, Иисус не был рождён в Рождество, они сдвинули дату!");
+		break; case 13:
+			appendMessage("Хочешь слышать приятные слова? Встречайся с лингвистом!");
+		break; case 14:
+			appendMessage("Wubba lubba dub dub.");
+		break; case 15:
+			appendMessage("");
+	}
+	appendMessage("\r\n");
+	return true;
+}
+bool IrcServer::bot_roll(const char*& str) {
+	static char const *countries[212] = {
+		"Абхазия", "Австралия", "Австрия", "Азад-Кашмир", "Азербайджан", "Албания", "Алжир", "Ангилья", "Ангола", "Андорра", "Антигуа и Барбуда", "Аргентина", "Армения", "Аруба", "Афганистан", "Багамские Острова", "Бангладеш", "Барбадос", "Бахрейн", "Белиз", "Белоруссия", "Бельгия", "Бенин", "Болгария", "Боливия", "Босния и Герцеговина", "Ботсвана", "Бразилия", "Бруней", "Буркина-Фасо", "Бурунди", "Бутан", "Вануату", "Ватикан", "Великобритания", "Венгрия", "Венесуэла", "Восточный Тимор", "Вьетнам", "Габон", "Гаити", "Гайана", "Гамбия", "Гана", "Гватемала", "Гвинея", "Гвинея-Бисау", "Германия", "Гондурас", "Гонконг", "Государство Палестина", "Гренада", "Гренландия", "Греция", "Грузия", "Дания", "Демократическая Республика Конго", "Джибути", "Доминика", "Доминиканская Республика", "Египет", "Замбия", "Зимбабве", "Израиль", "Индия", "Индонезия", "Иордания", "Ирак", "Иран", "Ирландия", "Исландия", "Испания", "Италия", "Йемен", "Кабо-Верде", "Казахстан", "Камбоджа", "Камерун", "Канада", "Катар", "Кения", "Кипр", "Киргизия", "Кирибати", "Китай", "КНДР (Северная Корея)", "Колумбия", "Коморские Острова", "Косово", "Коста-Рика", "Кот-д’Ивуар", "Куба", "Кувейт", "Кюрасао", "Лаос", "Латвия", "Лесото", "Либерия", "Ливан", "Ливия", "Литва", "Лихтенштейн", "Люксембург", "Маврикий", "Мавритания", "Мадагаскар", "Македония", "Малави", "Малайзия", "Мали", "Мальдивы", "Мальта", "Марокко", "Маршалловы Острова", "Мексика", "Микронезия", "Мозамбик", "Молдавия", "Монако", "Монголия", "Мьянма", "Нагорно-Карабахская Республика", "Намибия", "Науру", "Непал", "Нигер", "Нигерия", "Нидерланды", "Никарагуа", "Ниуэ", "Новая Зеландия", "Норвегия", "Объединённые Арабские Эмираты", "Оман", "Острова Кука", "Пакистан", "Палау", "Панама", "Папуа – Новая Гвинея", "Парагвай", "Перу", "Польша", "Португалия", "Пуэрто-Рико", "Республика Конго", "Россия", "Руанда", "Румыния", "Сальвадор", "Самоа", "Сан-Марино", "Сан-Томе и Принсипи", "Саудовская Аравия", "Сахарская Арабская Демократическая Республика", "Свазиленд", "Северный Кипр", "Сейшельские Острова", "Сенегал", "Сент-Винсент и Гренадины", "Сент-Китс и Невис", "Сент-Люсия", "Сербия", "Сингапур", "Синт-Мартен", "Сирия", "Словакия", "Словения", "Соединённые Штаты Америки", "Соломоновы Острова", "Сомали", "Судан", "Суринам", "Сьерра-Леоне", "Таджикистан", "Таиланд", "Танзания", "Того", "Тонга", "Тринидад и Тобаго", "Тувалу", "Тунис", "Туркмения", "Турция", "Уганда", "Узбекистан", "Украина", "Уругвай", "Фареры", "Фиджи", "Филиппины", "Финляндия", "Франция", "Хорватия", "Центральноафриканская Республика", "Чад", "Черногория", "Чехия", "Чили", "Швейцария", "Швеция", "Шри-Ланка", "Эквадор", "Экваториальная Гвинея", "Эритрея", "Эстония", "Эфиопия", "Южная Корея", "Южная Осетия", "Южно-Африканская Республика", "Южный Судан", "Ямайка", "Япония"
+	};
+	static char const *continents[7] = {
+		"Евразия", "Северная Америка", "Южная Америка",
+		"Австралия", "Африка", "Антарктида", "Атлантида"
+	};
+	static char const *religions[13] = {
+		"ИСЛАМ", "БУДДИЗМ", "ДАОСИЗМ", "КАТОЛИЧЕСТВО",
+		"ПРАВОСЛАВИЕ", "ПРОТИСТАНТИЗМ", "ИУДАИЗМ", "ИНДУИЗМ",
+		"АГНОСТИЦИЗМ", "ТЕНГРИАНСТВО", "ПАСТАФАРИАНСТВО",
+		"РАСТАФАРИАНСТВО", "САТАНИЗМ"
+	};
+	static char const *deck[52] = {
+		"2♠️", "3♠️", "4♠️", "5♠️", "6♠️", "7♠️", "8♠️",
+		"9♠️", "10♠️", "J♠️", "Q♠️", "K♠️", "A♠️",
+		"2♥️", "3♥️", "4♥️", "5♥️", "6♥️", "7♥️", "8♥️",
+		"9♥️", "10♥️", "J♥️", "Q♥️", "K♥️", "A♥️",
+		"2♦️", "3♦️", "4♦️", "5♦️", "6♦️", "7♦️", "8♦️",
+		"9♦️", "10♦️", "J♦️", "Q♦️", "K♦️", "A♦️",
+		"2♣️", "3♣️", "4♣️", "5♣️", "6♣️", "7♣️", "8♣️",
+		"9♣️", "10♣️", "J♣️", "Q♣️", "K♣️", "A♣️"
+	};
+	static char const *rollers[] = {
+		"color",
+		"continents",
+		"countries",
+		"deck",
+		"die",
+		"religion",
+		"time",
+	};
+	long int roll;
+	std::ptrdiff_t rnd
+		= binary_search(rollers, 2, str);
+	switch(rnd) {
+		break; case -1: {
+			m_message += "Генераторы: color";
+			for (const char **it = rollers + 1
+				, **end = it + sizeof rollers / sizeof *rollers
+				; it != end; ++it) {
+				m_message += ", ";
+				m_message += *it;
+			}
+			m_message += ".";
+		}
+		break; case 0: {
+			roll = (std::rand() & 0xFFFF)
+				| (std::rand() & 0xFFFF << 16);
+			roll >>= 8;
+			std::string d;
+			std::stringstream s;
+			s << std::hex << roll;
+			s >> d;
+			m_message += "#";
+			m_message += d;
+		}
+		break; case 1:
+			roll = std::rand() & 7;
+			m_message += continents[roll];
+			m_message += " затонула.";
+		break; case 2:
+			roll = std::rand() % 212;
+			m_message += "Я думаю, тебе здесь нечего делать;"
+				" срочно бросай всё и едь в другое место! ";
+			m_message += countries[roll];
+			m_message += " ждёт тебя!";
+		break; case 3:
+			roll = std::rand() & 7;
+			m_message += "Костяшка остановилась на ";
+			m_message += roll + 1;
+			m_message += ".";
+		break; case 4:
+			roll = std::rand() % 52;
+			appendMessage("Загадай карту. Ммм. "
+					"Ты выбрал ");
+			m_message += deck[roll];
+			m_message += ".";
+		break; case 5: {
+			float r1 = static_cast<float>(
+				std::rand())
+				/ (static_cast<float>(RAND_MAX)/90.f);
+			float r2 = static_cast<float>(
+				std::rand())
+				/ (static_cast<float>(RAND_MAX)/90.f);
+			appendMessage("Ща я тя по айпи вычислю. "
+					"Ты здесь: ");
+			m_message += r1;
+			m_message += std::rand() & 1 ? "с.ш." : "ю.ш.";
+			m_message += r2;
+			m_message += std::rand() & 1 ? "з.д." : "в.д.";
+		}
+		break; case 6:
+			appendMessage("Ты принял ");
+			appendMessage(religions[std::rand() % 13]);
+			m_message += ".";
+		break; case 7:
+			appendMessage("Сейчас ");
+			roll = std::rand() % 12;
+			m_message += roll + 1;
+			m_message += ":";
+			roll = std::rand() % 60;
+			m_message += roll;
+			m_message += std::rand() & 1 ? " AM." : " PM.";
+		break; case 8:
+			appendMessage("");
+		break; case 9:
+			appendMessage("");
+		break; case 10:
+			appendMessage("");
+		break; case 11:
+			appendMessage("");
+		break; case 12:
+			appendMessage("");
+		break; case 13:
+			appendMessage("");
+		break; case 14:
+			appendMessage("");
+		break; case 15:
+			appendMessage("");
+	}
+	appendMessage(".\r\n");
+	return true;
 }
 
 IrcServer::~IrcServer()
@@ -1031,6 +1560,8 @@ bool IrcServer::registerUser() {
 }
 
 void IrcServer::appendMessageBegin(const char *code, int fd) {
+	if (m_message.size() > 272)
+		sendMessage();
 	appendMessage(":");
 	appendMessageSelf();
 	appendMessage(code);
@@ -1067,8 +1598,8 @@ void IrcServer::errorBannedFromChan() {
 }
 
 bool IrcServer::isInChannel(const Channel& channel) {
-	if (channel.isSpeaker(m_currentFd)
-			|| channel.isOperator(m_currentFd))
+	if (!channel.isSpeaker(m_currentFd)
+			|| !channel.isOperator(m_currentFd))
 		return true;
 	appendMessageBegin(IRC_ERR_NOTONCHANNEL, m_currentFd);
 	appendMessage(" :You're not on that channel\r\n");
@@ -1094,12 +1625,20 @@ void IrcServer::notification(const char *rpl, std::string str) {
 	appendMessage(str);
 }
 
-bool IrcServer::checkChannelEmpty(Channel& channel) {
+bool IrcServer::checkChannelEmpty(const std::string& name, Channel& channel) {
 	if (channel.getOperators().empty()) {
-		if (channel.getSpeakers().empty())
+		if (channel.getSpeakers().empty()) {
 			return true;
-		else
+		}
+		else {
+			appendMessage(":" IRC_SERVER_NAME " MODE #");
+			appendMessage(name);
+			appendMessage(" +o ");
+			appendMessage(m_users[channel.getSpeakers().front()]);
+			appendMessage("\r\n");
+			messageInChannel(channel);
 			makeOp(channel, channel.getSpeakers().front());
+		}
 	}
 	return false;
 }
