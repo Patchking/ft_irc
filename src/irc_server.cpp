@@ -1491,18 +1491,20 @@ bool IrcServer::bot_roll(const char*& str) {
 		"countries\r",
 		"deck\r",
 		"die\r",
+		"football\r",
 		"religion\r",
 		"time\r"
 	};
 	long int roll;
 	std::ptrdiff_t rnd;
 	if (*str > 33)
-		rnd = binary_search(rollers, 7, str);
+		rnd = binary_search(rollers, 8, str);
 	else
-		rnd = rand() % 7;
+		rnd = rand() & 7;
 	switch(rnd) {
 		break; case -1: {
-			m_message += "Генераторы: color, continents, countries, coordinates, deck, die, religion, time..";
+			m_message += "Генераторы: color, continents, countries, coordinates, "
+				"deck, die, football, religion, time..";
 		}
 		break; case 0: {
 			roll = (std::rand() & 0xFFFF)
@@ -1552,11 +1554,22 @@ bool IrcServer::bot_roll(const char*& str) {
 			m_message += "Костяшка остановилась на ";
 			m_message += roll + '1';
 			m_message += ".";
-		break; case 6:
+		break; case 6: {
+			appendMessage("Это была невероятная игра! Это было блестяще! Блестяще, я говорю вам!\r\n");
+			appendMessageBot();
+			appendMessage("Невероятное завершение со счётом: ");
+			std::string d;
+			std::stringstream s;
+			s << countries[std::rand() % 212] << (std::rand() % 10)
+				<< ":" << (std::rand() % 10) << countries[std::rand() % 212];
+			s >> d;
+			m_message += d;
+		}
+		break; case 7:
 			appendMessage("Ты принял ");
 			appendMessage(religions[std::rand() % 13]);
 			m_message += ".";
-		break; case 7: {
+		break; case 8: {
 			std::string d;
 			std::stringstream s;
 			appendMessage("Сейчас ");
@@ -1567,8 +1580,6 @@ bool IrcServer::bot_roll(const char*& str) {
 			s >> d;
 			m_message += d;
 		}
-		break; case 8:
-			appendMessage("");
 		break; case 9:
 			appendMessage("");
 		break; case 10:
