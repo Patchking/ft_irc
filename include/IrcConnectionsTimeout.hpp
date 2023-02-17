@@ -10,17 +10,20 @@
 namespace ft_irc {
 class IrcConnectionsTimeout {
 	public:
+		IrcConnectionsTimeout();
 		//milliseconds. Returns time to next ping to all users.
 		unsigned int nextTimeout();
-		//If someone didn't answer for a while return their fd. One per func calling.
+		//If someone hasn't been updateTimeout() for a DISCONNECT_DELAY time. Return fd. Otherwise return -1 
 		int isSomeoneTimedOut();
 		void addConnections(int fd);
 		void removeConnections(int fd);
-		void update(int fd);
+		//Update timeout timer
+		void updateTimeout(int fd);
+		//Update ping timer
+		void updatePing();
 	private:
 		unsigned int getTime();
-		struct timeval time;
-		unsigned int priv_update = 0;
+		unsigned int priv_update;
 		std::map<int, unsigned int> mp;
 };
 }

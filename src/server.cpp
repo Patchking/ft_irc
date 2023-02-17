@@ -121,13 +121,13 @@ const std::vector<Server::message_type>& Server::getMessage() {
 						Console::log("recv() error", Console::GENERAL);
 						Console::log(strerror(errno), Console::GENERAL);
 					break; default:
-						Console::log("User #", curfd, " message updated", Console::DEBUG);
+						Console::log("User #", curfd, " message updated", Console::ALL);
 						buffer[result] = '\0';
 						readBuffer += buffer;
 				}
 			} else if (!readBuffer.empty()) {
-				Console::log("User #", curfd, " sends message");
-				Console::log(readBuffer, Console::DEBUG);
+				Console::log("User #", curfd, " sends message", Console::ALL);
+				Console::log(readBuffer, Console::ALL);
 				out.push_back(message_type(MESSAGE_RECIEVED,
 							curfd, readBuffer));
 			}
@@ -136,7 +136,7 @@ const std::vector<Server::message_type>& Server::getMessage() {
 		case POLLOUT: {
 			std::string &writeBuffer = m_connections[curfd].writebuffer;
 			if (!writeBuffer.empty() && fds[i].revents & POLLOUT) {
-				Console::log("send message to ", i, ": ", writeBuffer);
+				Console::log("send message to ", curfd, ": ", writeBuffer, Console::DEBUG);
 				int send_result = send(curfd, writeBuffer.c_str()
 						, writeBuffer.size(), 0);
 				if (send_result < 0) {
