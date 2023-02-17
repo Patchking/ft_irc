@@ -26,6 +26,13 @@ int ft_irc::IrcConnectionsTimeout::isSomeoneTimedOut()
     return (-1);
 }
 
+bool ft_irc::IrcConnectionsTimeout::isTimedOut(int fd)
+{
+    if (getTime() - priv_update > DISCONNECT_DELAY)
+        return true;
+    return false;
+}
+
 void ft_irc::IrcConnectionsTimeout::addConnections(int fd)
 {
     mp[fd] = getTime();
@@ -40,9 +47,11 @@ void ft_irc::IrcConnectionsTimeout::removeConnections(int fd)
 
 void ft_irc::IrcConnectionsTimeout::updateTimeout(int fd)
 {
-    std::map<int, unsigned int>::iterator it = mp.find(fd);
-    if (it != mp.end())
-        it->second = getTime();
+    // std::map<int, unsigned int>::iterator it = mp.find(fd);
+    // if (it != mp.end())
+    //     it->second = getTime();
+    // else 
+    mp[fd] = getTime();
 }
 
 void ft_irc::IrcConnectionsTimeout::updatePing()

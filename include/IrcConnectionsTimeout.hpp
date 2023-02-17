@@ -15,6 +15,8 @@ class IrcConnectionsTimeout {
 		unsigned int nextTimeout();
 		//If someone hasn't been updateTimeout() for a DISCONNECT_DELAY time. Return fd. Otherwise return -1 
 		int isSomeoneTimedOut();
+		//Is fd is expired (havn't updateTimeout for a DISCONNECT_DELAY)? 
+		bool isTimedOut(int fd);
 		void addConnections(int fd);
 		void removeConnections(int fd);
 		//Update timeout timer
