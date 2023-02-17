@@ -127,7 +127,7 @@ class IrcServer : public Server {
 	void appendMessageUserSpeaker(int fd);
 	void sendMsgToUser(int fd);
 	void sendMsgToConsole(int fd);
-	bool isInChannel(const Channel& channel);
+	bool isInChannel(const Channel& channel, bool send_error = true);
 	bool isChannelOperator(const Channel& channel);
 	bool checkChannelEmpty(const std::string& name, Channel& channel);
 	void makeOp(Channel& channel, int id);
